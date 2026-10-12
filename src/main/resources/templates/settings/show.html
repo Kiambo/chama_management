@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Settings')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('settings')}"></header>
+<main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<span aria-current="page">Settings</span>
+	</nav>
+	<p class="eyebrow">Settings</p>
+	<h1>Chama rules</h1>
+	<p class="muted">The values in force today. A change needs the group's decision and starts on the date you choose, never in the past: earlier months keep their amounts, and loans already out keep their own rate and terms.</p>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<form th:action="@{/settings}" method="post" enctype="multipart/form-data" class="stack">
+		<section class="card" th:each="g : ${groups}">
+			<h2 th:text="${g.value}">Group</h2>
+			<p class="hint" th:if="${g.key == 'contributions'}">Changes here start on the 1st of a month that hasn't begun yet.</p>
+			<label th:each="k : ${byGroup[g.key]}" class="setting">
+				<span th:text="${k.label}">Label</span>
+				<span class="setting-input">
+					<span class="unit" th:if="${k.unit.name() == 'KES'}">KES</span>
+					<input type="number" step="any" min="0" th:name="|v_${k.name()}|" th:value="${values[k.name()]}" inputmode="decimal">
+					<span class="unit" th:if="${k.unit.name() == 'PERCENT'}">%</span>
+					<span class="unit" th:if="${k.unit.name() == 'TIMES'}">x</span>
+					<span class="unit" th:if="${k.unit.name() == 'DAYS'}">days</span>
+				</span>
+			</label>
+		</section>
+
+		<section class="card">
+			<h2>When the change starts</h2>
+			<label>Effective from
+				<input type="date" name="effectiveFrom" th:value="${today}" th:min="${today}" required>
+				<span class="hint" th:text="|For contribution changes, use the 1st of a coming month, e.g. ${#temporals.format(nextMonth, 'd MMMM yyyy')}.|">hint</span>
+			</label>
+			<fieldset th:replace="~{fragments/layout :: decisionFields}"></fieldset>
+			<p class="hint">Only the values you changed are saved.</p>
+			<div class="actions"><button type="submit" class="button primary">Save changes</button></div>
+		</section>
+	</form>
+
+	<section class="card" id="methods">
+		<h2>Payment methods</h2>
+		<p class="muted">Offered in every payment form. "Other…" is always there too, for anything unusual. A method is hidden rather than deleted, because past payments use it.</p>
+		<ul class="plain">
+			<li th:each="m : ${methods}" class="method-row" th:classappend="${!m.active} ? 'inactive'">
+				<span th:text="${m.name}">M-Pesa</span>
+				<form th:action="@{/settings/methods/{id}(id=${m.id})}" method="post" class="inline">
+					<input type="hidden" name="active" th:value="${!m.active}">
+					<button type="submit" class="link-button" th:text="${m.active} ? 'Hide' : 'Show again'">Hide</button>
+				</form>
+			</li>
+		</ul>
+		<form th:action="@{/settings/methods}" method="post" class="inline-form">
+			<input type="text" name="name" maxlength="50" placeholder="e.g. Equity Bank" required>
+			<button type="submit" class="button">Add method</button>
+		</form>
+		<p class="hint">Direct links to M-Pesa or a bank (so payments arrive by themselves) are a possible later upgrade; the brief keeps them out of this version.</p>
+	</section>
+
+	<section class="card" th:unless="${history.isEmpty()}">
+		<h2>Changes made</h2>
+		<div class="table-wrap">
+			<table>
+				<thead><tr><th>From</th><th>Setting</th><th class="num">Value</th></tr></thead>
+				<tbody>
+				<tr th:each="h : ${history}">
+					<td class="nowrap">
+						<span th:text="${#temporals.format(h.effectiveFrom, 'd MMM yyyy')}">1 Nov 2026</span>
+						<span class="badge badge-amber" th:if="${h.effectiveFrom.isAfter(today)}">Upcoming</span>
+					</td>
+					<td th:text="${h.key.label}">Setting</td>
+					<td class="num" th:text="${@fmt.plain(h.value)}">8</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<p class="hint">Each change is listed with its group decision under <a th:href="@{/decisions}">Decisions</a>.</p>
+	</section>
+</main>
+</body>
+</html>

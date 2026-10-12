@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Profile')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('profile')}"></header>
+<main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<span aria-current="page">Profile</span>
+	</nav>
+	<p class="eyebrow" th:text="${user.role.name() == 'TREASURER'} ? 'Treasurer' : 'Member'">Treasurer</p>
+	<h1 th:text="${linkedMemberName} ?: ${user.username}">Profile</h1>
+	<p class="muted" th:text="|Logged in as ${user.username}|">Logged in as</p>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<section class="card">
+		<h2>You as a member</h2>
+		<p class="muted">Link your login to your member record, so the dashboard greets you by name and your page is one click away.</p>
+		<form th:action="@{/profile/member}" method="post" class="stack">
+			<label>Member record
+				<select name="memberId">
+					<option value="">Not linked</option>
+					<option th:each="m : ${members}" th:value="${m.id}" th:text="${m.fullName}"
+							th:selected="${m.id == linkedMemberId}">Name</option>
+				</select>
+			</label>
+			<div class="actions">
+				<button type="submit" class="button">Save</button>
+				<a th:if="${linkedMemberId != null}" class="button" th:href="@{/members/{id}(id=${linkedMemberId})}">My member page</a>
+			</div>
+		</form>
+	</section>
+
+	<section class="card">
+		<h2>Contact details</h2>
+		<p class="muted">Kept for later: password reset and reminders.</p>
+		<form th:action="@{/profile/contact}" method="post" class="stack">
+			<label>Email
+				<input type="email" name="email" maxlength="254" autocomplete="email" th:value="${user.email}">
+			</label>
+			<label>Phone
+				<input type="tel" name="phone" maxlength="30" autocomplete="tel" th:value="${user.phone}" placeholder="+254 712 345678">
+			</label>
+			<div class="actions"><button type="submit" class="button">Save contact details</button></div>
+		</form>
+	</section>
+
+	<section class="card">
+		<h2>Change password</h2>
+		<p class="muted" th:text="${passwordChangedOn != null} ? |Last changed ${#temporals.format(passwordChangedOn, 'd MMM yyyy')}.| : 'Still the first password, from the set-up file. Change it before going online.'">Last changed</p>
+		<form th:action="@{/profile/password}" method="post" class="stack">
+			<label>Current password
+				<input type="password" name="current" autocomplete="current-password" required>
+			</label>
+			<div class="grid-2">
+				<label>New password (at least 12 characters)
+					<input type="password" name="newPassword" minlength="12" autocomplete="new-password" required>
+				</label>
+				<label>New password again
+					<input type="password" name="repeat" minlength="12" autocomplete="new-password" required>
+				</label>
+			</div>
+			<div class="actions"><button type="submit" class="button primary">Change password</button></div>
+		</form>
+	</section>
+</main>
+</body>
+</html>

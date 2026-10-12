@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Creates the first recorder account from ADMIN_USERNAME / ADMIN_PASSWORD when the
+ * Creates the first treasurer account from ADMIN_USERNAME / ADMIN_PASSWORD when the
  * database has no users. Does nothing once any user exists, so changing the
  * environment variables later never overwrites a real password.
  */
@@ -49,7 +49,7 @@ public class AdminSeeder implements ApplicationRunner {
 			throw new IllegalStateException(
 					"ADMIN_PASSWORD must be at least " + MIN_PASSWORD_LENGTH + " characters");
 		}
-		users.save(new AppUser(username, passwordEncoder.encode(password), Role.RECORDER));
-		log.info("Created recorder account '{}'", username);
+		users.save(new AppUser(username, passwordEncoder.encode(password), Role.TREASURER));
+		log.info("Created treasurer account '{}'", username);
 	}
 }

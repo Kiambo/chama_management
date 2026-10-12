@@ -23,6 +23,11 @@ public class Formats {
 		return Money.format(amount);
 	}
 
+	/** A number without trailing zeros, e.g. 8 rather than 8.0000. */
+	public String plain(BigDecimal value) {
+		return value == null ? "" : value.stripTrailingZeros().toPlainString();
+	}
+
 	public String month(YearMonth month) {
 		return month == null ? "" : MONTH.format(month);
 	}

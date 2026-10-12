@@ -23,7 +23,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
- * A party's initials on the digital loan agreement. In v1 the recorder enters them after
+ * A party's initials on the digital loan agreement. In v1 the treasurer enters them after
  * the party has confirmed; recordedBy shows who entered them.
  */
 @Entity

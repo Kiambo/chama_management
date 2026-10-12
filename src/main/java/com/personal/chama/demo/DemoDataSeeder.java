@@ -72,7 +72,7 @@ public class DemoDataSeeder implements ApplicationRunner {
 			return;
 		}
 		SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
-				"demo-seed", null, AuthorityUtils.createAuthorityList("ROLE_RECORDER")));
+				"demo-seed", null, AuthorityUtils.createAuthorityList("ROLE_TREASURER")));
 		try {
 			seed();
 		} finally {

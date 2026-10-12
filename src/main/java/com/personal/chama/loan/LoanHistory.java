@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.personal.chama.common.Money;
 import com.personal.chama.config.ChamaProperties;
+import com.personal.chama.settings.SettingsService;
 
 /**
  * Reads a loan's history and replays it (see {@link RepaymentSchedule}). Also knows the
@@ -23,16 +24,16 @@ public class LoanHistory {
 	private final LateFeeRepository fees;
 	private final ScheduleChangeRepository changes;
 	private final RepaymentRepository repayments;
-	private final ChamaProperties.Loan settings;
+	private final SettingsService settings;
 	private final Clock clock;
 
 	public LoanHistory(InstallmentRepository installments, LateFeeRepository fees, ScheduleChangeRepository changes,
-			RepaymentRepository repayments, ChamaProperties properties, Clock clock) {
+			RepaymentRepository repayments, SettingsService settings, Clock clock) {
 		this.installments = installments;
 		this.fees = fees;
 		this.changes = changes;
 		this.repayments = repayments;
-		this.settings = properties.loan();
+		this.settings = settings;
 		this.clock = clock;
 	}
 
@@ -64,7 +65,8 @@ public class LoanHistory {
 
 	/** The last day an installment can be paid before it counts as missed. */
 	public LocalDate deadline(Installment installment) {
-		return installment.getDueDate().plusDays(settings.graceDays());
+		// The grace in force when the installment was due, so a later change doesn't rewrite it.
+		return installment.getDueDate().plusDays(settings.asOf(installment.getDueDate()).loan().graceDays());
 	}
 
 	public boolean isPastDeadline(Installment installment) {
@@ -110,7 +112,7 @@ public class LoanHistory {
 	}
 
 	/**
-	 * Can the recorder recover what's owed from shares now? Once the loan has defaulted,
+	 * Can the treasurer recover what's owed from shares now? Once the loan has defaulted,
 	 * or an installment was missed. A loan repaid in one payment waits until it is a month
 	 * overdue (decision R4).
 	 */
@@ -138,7 +140,12 @@ public class LoanHistory {
 				.max(LocalDate::compareTo).orElse(loan.getDisbursedDate());
 	}
 
+	/** The loan settings in force now. */
 	public ChamaProperties.Loan settings() {
-		return settings;
+		return settings.current().loan();
+	}
+
+	public ChamaProperties.Loan settingsAsOf(LocalDate date) {
+		return settings.asOf(date).loan();
 	}
 }

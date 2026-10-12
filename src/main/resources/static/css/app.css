@@ -357,3 +357,45 @@ details.correct-inline summary { cursor: pointer; color: var(--plum); list-style
 details.correct-inline summary::-webkit-details-marker { display: none; }
 details.correct-inline[open] summary { color: var(--muted); }
 details.correct-inline form { display: flex; gap: 0.4rem; margin-top: 0.35rem; }
+
+/* Settings */
+label.setting { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem 1rem; padding: 0.55rem 0; border-bottom: 1px solid var(--card-border); color: var(--ink); font-size: 0.95rem; }
+.setting-input { display: inline-flex; align-items: center; gap: 0.4rem; }
+.setting-input input { width: 8.5rem; text-align: right; }
+.setting-input .unit { color: var(--muted); font-size: 0.85rem; }
+.method-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid var(--card-border); }
+
+/* Go-live checklist */
+.checklist ol { list-style: none; padding: 0; margin: 0.5rem 0 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.checklist li { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.checklist .tick { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem;
+	border: 1px solid var(--line); border-radius: 50%; color: var(--green); font-weight: 700; font-size: 0.85rem; }
+.checklist li.done .tick { background: var(--green-bg); border-color: var(--green); }
+.checklist li.done a { color: var(--muted); text-decoration: line-through; }
+.card.compact td { padding-block: 0.5rem; }
+.badge-outline { background: transparent; border: 1px solid var(--rose); color: var(--rose-ink); }
+
+/* Phone: a single column, bigger tap targets, 16px inputs so phones don't zoom in. */
+@media (max-width: 640px) {
+	h1 { font-size: 1.8rem; }
+	.hero h1 { font-size: 2rem; }
+	.hero .band-inner { padding-block: 1.25rem 1.5rem; }
+	.site-header nav { gap: 0.35rem 1rem; font-size: 0.95rem; }
+	.page { padding-block: 1.25rem 2.5rem; }
+	.title-row { flex-direction: column; align-items: flex-start; }
+	.card { padding: 1rem 1.05rem; }
+	.stat-grid .stat-value { font-size: 1.9rem; }
+	input, select, textarea { font-size: 16px; }
+	.button, button.button { min-height: 44px; padding: 0.65rem 1rem; }
+	.actions { flex-wrap: wrap; }
+	table { font-size: 0.9rem; }
+	th, td { padding-inline: 0.45rem; }
+	.rotation-end { margin-left: 0; width: 100%; justify-content: flex-start; }
+	.rotation-amount { font-size: 1.3rem; }
+	.loan-row-end { flex-wrap: wrap; }
+	.member-head .avatar { width: 2.75rem; height: 2.75rem; }
+	.split-cols { grid-template-columns: 1fr; }
+	.split-cols > div + div { border-left: 0; padding-left: 0; border-top: 1px solid var(--card-border); padding-top: 0.75rem; }
+	label.setting { flex-direction: column; align-items: stretch; }
+	.setting-input input { width: 100%; }
+}

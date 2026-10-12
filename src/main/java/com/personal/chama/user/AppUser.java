@@ -44,6 +44,15 @@ public class AppUser {
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt = Instant.now();
 
+	@Column(length = 254)
+	private String email;
+
+	@Column(length = 30)
+	private String phone;
+
+	@Column(name = "password_changed_at")
+	private Instant passwordChangedAt;
+
 	protected AppUser() {
 	}
 
@@ -79,5 +88,27 @@ public class AppUser {
 
 	public boolean isEnabled() {
 		return enabled;
+	}
+
+	void changePassword(String newHash, Instant at) {
+		this.passwordHash = newHash;
+		this.passwordChangedAt = at;
+	}
+
+	void setContact(String email, String phone) {
+		this.email = email;
+		this.phone = phone;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public Instant getPasswordChangedAt() {
+		return passwordChangedAt;
 	}
 }

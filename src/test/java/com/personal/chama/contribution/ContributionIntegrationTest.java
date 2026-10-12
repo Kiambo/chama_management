@@ -39,7 +39,7 @@ import com.personal.chama.member.MemberRepository;
  * change caused by each test, never as absolute totals.
  */
 @IntegrationTest
-@WithMockUser(username = "recorder-b", roles = "RECORDER")
+@WithMockUser(username = "recorder-b", roles = "TREASURER")
 class ContributionIntegrationTest {
 
 	private static final YearMonth OCT = YearMonth.of(2026, 10);
@@ -240,6 +240,14 @@ class ContributionIntegrationTest {
 				.andExpect(model().attribute("shares", Matchers.comparesEqualTo(new BigDecimal("2000.00"))));
 		mvc.perform(get("/ledger")).andExpect(status().isOk());
 		mvc.perform(get("/ledger").param("memberId", member.getId().toString())).andExpect(status().isOk());
+		// The member's statement downloads as a spreadsheet file.
+		mvc.perform(get("/members/{id}/statement.csv", member.getId())).andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith("text/csv"))
+				.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+						.string("Content-Disposition", Matchers.containsString("attachment")))
+				.andExpect(content().string(Matchers.containsString("CONTRIBUTIONS")))
+				.andExpect(content().string(Matchers.containsString(member.getFullName())))
+				.andExpect(content().string(Matchers.containsString("October 2026,3500,2000,1500,Paid")));
 		mvc.perform(get("/")).andExpect(status().isOk());
 	}
 }

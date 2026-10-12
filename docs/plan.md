@@ -25,7 +25,7 @@ work stops after each phase for review.
 5. **Merry-go-round** (done, see `phase-5-plan.md`): rotation and rounds, payout only when all
    participants have paid, deduction of the recipient's missing savings,
    opt-out rules, advance to next.
-6. **Dashboard and member ledger screens**, matching the mockup.
+6. **Dashboard and member ledger screens** (done, see `phase-6-plan.md`; plus treasurer role, profile, settings, statements), matching the mockup.
 7. **Go-live on localhost with real data**: members, cut-over balances,
    existing loans and payout history entered through the UI and checked
    against the group's records.

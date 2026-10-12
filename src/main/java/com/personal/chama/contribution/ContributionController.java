@@ -22,6 +22,7 @@ import com.personal.chama.decision.DecisionException;
 import com.personal.chama.decision.DecisionInput;
 import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberService;
+import com.personal.chama.settings.PaymentMethodService;
 
 import jakarta.validation.Valid;
 
@@ -30,15 +31,17 @@ import jakarta.validation.Valid;
 public class ContributionController {
 
 	/** Suggestions only; any other method can be typed in (Phase 2 plan, Q5). */
-	static final List<String> PAYMENT_METHODS = List.of("M-Pesa", "PayPal", "Bank deposit", "Bank transfer", "Cash");
-
+	private final PaymentMethodService paymentMethods;
+	private final ContributionRules rules;
 	private final ContributionService contributionService;
 	private final MemberService memberService;
 	private final ChamaProperties properties;
 
 	public ContributionController(ContributionService contributionService, MemberService memberService,
-			ChamaProperties properties) {
+			ChamaProperties properties, PaymentMethodService paymentMethods, ContributionRules rules) {
 		this.contributionService = contributionService;
+		this.paymentMethods = paymentMethods;
+		this.rules = rules;
 		this.memberService = memberService;
 		this.properties = properties;
 	}
@@ -51,7 +54,7 @@ public class ContributionController {
 		model.addAttribute("month", shown);
 		model.addAttribute("rows", rows);
 		model.addAttribute("months", monthChoices());
-		model.addAttribute("dueDay", properties.contribution().dueDay());
+		model.addAttribute("dueDay", rules.dueDate(shown).getDayOfMonth());
 		return "contributions/month";
 	}
 
@@ -139,7 +142,7 @@ public class ContributionController {
 		model.addAttribute("form", form);
 		model.addAttribute("members", memberService.listAll().stream().filter(Member::isActive).toList());
 		model.addAttribute("months", monthChoices());
-		model.addAttribute("methods", PAYMENT_METHODS);
+		model.addAttribute("methods", paymentMethods.activeNames());
 		if (form.getMemberId() != null && form.getMonth() != null) {
 			model.addAttribute("row", contributionService.memberMonth(form.getMemberId(), form.getMonth()));
 		}

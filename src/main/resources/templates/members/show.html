@@ -25,8 +25,12 @@
 				</p>
 			</div>
 		</div>
-		<span th:if="${member.active}" class="badge badge-green">Active</span>
-		<span th:unless="${member.active}" class="badge">Inactive</span>
+		<div class="actions wrap">
+			<span th:if="${member.active}" class="badge badge-outline">Active</span>
+			<span th:unless="${member.active}" class="badge">Inactive</span>
+			<a class="button" th:href="@{/members/{id}/statement.csv(id=${member.id})}">Download statement</a>
+			<a sec:authorize="hasRole('TREASURER')" class="button" th:href="@{/members/{id}/edit(id=${member.id})}">Edit</a>
+		</div>
 	</div>
 
 	<div class="stat-grid">
@@ -75,7 +79,7 @@
 	<div class="table-wrap" th:unless="${history.isEmpty()}">
 		<table>
 			<thead>
-			<tr><th>Month</th><th class="num">Paid</th><th class="num">MMF</th><th class="num">MGR</th><th>Status</th><th sec:authorize="hasRole('RECORDER')"></th></tr>
+			<tr><th>Month</th><th class="num">Paid</th><th class="num">MMF</th><th class="num">MGR</th><th>Status</th><th sec:authorize="hasRole('TREASURER')"></th></tr>
 			</thead>
 			<tbody>
 			<tr th:each="h : ${history}">
@@ -84,7 +88,7 @@
 				<td class="num muted" th:text="${h.paid.mmf().signum() > 0} ? ${@fmt.amount(h.paid.mmf())} : '—'">2,000</td>
 				<td class="num muted" th:text="${h.paid.mgr().signum() > 0} ? ${@fmt.amount(h.paid.mgr())} : '—'">1,500</td>
 				<td><span th:replace="~{fragments/layout :: status(${h.status})}"></span></td>
-				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+				<td sec:authorize="hasRole('TREASURER')" class="row-actions">
 					<a th:if="${h.canRecord()}" th:href="@{/contributions/new(memberId=${member.id}, month=${h.month})}">Record</a>
 				</td>
 			</tr>

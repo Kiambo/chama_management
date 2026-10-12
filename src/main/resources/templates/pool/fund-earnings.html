@@ -19,7 +19,7 @@
 
 	<div th:replace="~{fragments/layout :: flash}"></div>
 
-	<section class="card" sec:authorize="hasRole('RECORDER')">
+	<section class="card" sec:authorize="hasRole('TREASURER')">
 		<h2>Record earnings</h2>
 		<div th:replace="~{fragments/layout :: error}"></div>
 		<form th:action="@{/fund-earnings}" method="post" enctype="multipart/form-data" class="stack">
@@ -48,7 +48,7 @@
 	<div class="table-wrap" th:unless="${earnings.isEmpty()}">
 		<table>
 			<thead>
-			<tr><th>Month</th><th class="num">Amount</th><th>Reference</th><th>Statement</th><th sec:authorize="hasRole('RECORDER')"></th></tr>
+			<tr><th>Month</th><th class="num">Amount</th><th>Reference</th><th>Statement</th><th sec:authorize="hasRole('TREASURER')"></th></tr>
 			</thead>
 			<tbody>
 			<tr th:each="e : ${earnings}" th:classappend="${e.voided} ? 'inactive'">
@@ -61,7 +61,7 @@
 					<span class="hint" th:if="${e.voided}" th:text="|Reversed: ${e.voidReason}|">Reversed</span>
 				</td>
 				<td><a th:if="${e.hasStatement()}" th:href="@{/fund-earnings/{id}/statement(id=${e.id})}" target="_blank" rel="noopener">View</a></td>
-				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+				<td sec:authorize="hasRole('TREASURER')" class="row-actions">
 					<a th:unless="${e.voided}" th:href="@{/fund-earnings/{id}/correct(id=${e.id})}">Correct</a>
 				</td>
 			</tr>

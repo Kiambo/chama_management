@@ -37,7 +37,7 @@
 				<th class="num">Paid</th>
 				<th class="num">Owed</th>
 				<th>Status</th>
-				<th sec:authorize="hasRole('RECORDER')"></th>
+				<th sec:authorize="hasRole('TREASURER')"></th>
 			</tr>
 			</thead>
 			<tbody>
@@ -51,7 +51,7 @@
 				<td class="num" th:text="${@fmt.amount(r.paid.total())}">3,500</td>
 				<td class="num" th:text="${@fmt.amount(r.owed().total())}">0</td>
 				<td><span th:replace="~{fragments/layout :: status(${r.status})}"></span></td>
-				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+				<td sec:authorize="hasRole('TREASURER')" class="row-actions">
 					<a th:if="${r.canRecord()}" th:href="@{/contributions/new(memberId=${r.member.id}, month=${month})}">Record</a>
 					<a th:href="@{/contributions/opt-out(memberId=${r.member.id}, month=${month})}">Opt-out</a>
 				</td>
@@ -66,7 +66,7 @@
 		<div class="table-wrap">
 			<table>
 				<thead>
-				<tr><th>Member</th><th>Paid on</th><th class="num">Amount</th><th class="num">MMF</th><th class="num">MGR</th><th>Method</th><th sec:authorize="hasRole('RECORDER')"></th></tr>
+				<tr><th>Member</th><th>Paid on</th><th class="num">Amount</th><th class="num">MMF</th><th class="num">MGR</th><th>Method</th><th sec:authorize="hasRole('TREASURER')"></th></tr>
 				</thead>
 				<tbody>
 				<th:block th:each="r : ${payments}">
@@ -82,7 +82,7 @@
 						<td>
 							<span th:text="${c.method}">M-Pesa</span>
 						</td>
-						<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+						<td sec:authorize="hasRole('TREASURER')" class="row-actions">
 							<a th:href="@{/contributions/{id}/correct(id=${c.id})}">Correct</a>
 						</td>
 					</tr>

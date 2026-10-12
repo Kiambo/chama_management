@@ -22,6 +22,7 @@ import com.personal.chama.common.Money;
 import com.personal.chama.ledger.LedgerService;
 import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberService;
+import com.personal.chama.settings.PaymentMethodService;
 import com.personal.chama.pool.OpeningBalanceService;
 
 import jakarta.validation.Valid;
@@ -30,8 +31,7 @@ import jakarta.validation.Valid;
 @RequestMapping("/loans")
 public class LoanController {
 
-	static final List<String> PAYMENT_METHODS = List.of("M-Pesa", "PayPal", "Bank deposit", "Bank transfer", "Cash");
-
+	private final PaymentMethodService paymentMethods;
 	private final LoanService loanService;
 	private final MemberService memberService;
 	private final LedgerService ledger;
@@ -40,8 +40,10 @@ public class LoanController {
 	private final LatePaymentService latePayments;
 
 	public LoanController(LoanService loanService, MemberService memberService, LedgerService ledger,
-			LoanCalculator calculator, OpeningBalanceService openingBalances, LatePaymentService latePayments) {
+			LoanCalculator calculator, OpeningBalanceService openingBalances, LatePaymentService latePayments,
+			PaymentMethodService paymentMethods) {
 		this.loanService = loanService;
+		this.paymentMethods = paymentMethods;
 		this.memberService = memberService;
 		this.ledger = ledger;
 		this.calculator = calculator;
@@ -137,7 +139,7 @@ public class LoanController {
 		model.addAttribute("borrowers", memberService.listAll().stream().filter(Member::isActive).toList());
 		model.addAttribute("tenures", Tenure.values());
 		model.addAttribute("kinds", LoanKind.values());
-		model.addAttribute("methods", PAYMENT_METHODS);
+		model.addAttribute("methods", paymentMethods.activeNames());
 		model.addAttribute("rates", rates());
 		model.addAttribute("settings", calculator.settings());
 		if (form.getBorrowerId() != null) {
@@ -160,7 +162,7 @@ public class LoanController {
 		// Bring fees and status up to date before showing the loan.
 		latePayments.reconcile(id);
 		model.addAttribute("v", loanService.view(id));
-		model.addAttribute("methods", PAYMENT_METHODS);
+		model.addAttribute("methods", paymentMethods.activeNames());
 		model.addAttribute("today", loanService.today());
 		return "loans/show";
 	}
@@ -177,7 +179,7 @@ public class LoanController {
 		} catch (LoanException e) {
 			model.addAttribute("error", e.getMessage());
 			model.addAttribute("v", loanService.view(id));
-			model.addAttribute("methods", PAYMENT_METHODS);
+			model.addAttribute("methods", paymentMethods.activeNames());
 			model.addAttribute("method", method);
 			model.addAttribute("today", loanService.today());
 			return "loans/show";

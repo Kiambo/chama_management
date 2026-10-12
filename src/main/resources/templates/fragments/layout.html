@@ -34,6 +34,10 @@
 			   th:attr="aria-current=${active == 'ledger'} ? 'page'">Ledger</a>
 			<a th:href="@{/decisions}" th:classappend="${active == 'decisions'} ? 'current'"
 			   th:attr="aria-current=${active == 'decisions'} ? 'page'">Decisions</a>
+			<a sec:authorize="hasRole('TREASURER')" th:href="@{/settings}" th:classappend="${active == 'settings'} ? 'current'"
+			   th:attr="aria-current=${active == 'settings'} ? 'page'">Settings</a>
+			<a th:href="@{/profile}" th:classappend="${active == 'profile'} ? 'current'"
+			   th:attr="aria-current=${active == 'profile'} ? 'page'">Profile</a>
 			<form th:action="@{/logout}" method="post" class="inline">
 				<button type="submit" class="link-button">Log out</button>
 			</form>

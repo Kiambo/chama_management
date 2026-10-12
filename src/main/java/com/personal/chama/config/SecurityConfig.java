@@ -16,9 +16,11 @@ public class SecurityConfig {
 		http
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/login", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
-						// Reading is open to any logged-in user; changing data needs the recorder.
+						// Reading is open to any logged-in user; changing data needs the treasurer.
 						.requestMatchers(HttpMethod.GET, "/**").authenticated()
-						.anyRequest().hasRole("RECORDER"))
+						// Everyone manages their own profile.
+						.requestMatchers(HttpMethod.POST, "/profile/**").authenticated()
+						.anyRequest().hasRole("TREASURER"))
 				.formLogin(form -> form
 						.loginPage("/login")
 						.defaultSuccessUrl("/", true)

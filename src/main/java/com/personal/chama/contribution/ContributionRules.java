@@ -4,12 +4,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.personal.chama.common.Money;
 import com.personal.chama.config.ChamaProperties;
 import com.personal.chama.member.Member;
+import com.personal.chama.settings.SettingsService;
 
 /**
  * The contribution rules (decisions C1-C5): what is due, how a payment is split, and
@@ -18,16 +21,29 @@ import com.personal.chama.member.Member;
 @Component
 public class ContributionRules {
 
-	private final ChamaProperties.Contribution settings;
+	/** The settings in force on a date. */
+	private final Function<LocalDate, ChamaProperties> settingsAsOf;
 	private final YearMonth cutover;
 
+	/** Fixed settings, for tests. */
 	public ContributionRules(ChamaProperties properties) {
-		this.settings = properties.contribution();
+		this.settingsAsOf = date -> properties;
 		this.cutover = properties.cutoverMonth();
 	}
 
+	@Autowired
+	public ContributionRules(SettingsService settings) {
+		this.settingsAsOf = settings::asOf;
+		this.cutover = settings.defaults().cutoverMonth();
+	}
+
+	/** A month's contribution settings: those in force on its 1st (so a change never rewrites the past). */
+	private ChamaProperties.Contribution settings(YearMonth month) {
+		return settingsAsOf.apply(month.atDay(1)).contribution();
+	}
+
 	public LocalDate dueDate(YearMonth month) {
-		return month.atDay(Math.min(settings.dueDay(), month.lengthOfMonth()));
+		return month.atDay(Math.min(settings(month).dueDay(), month.lengthOfMonth()));
 	}
 
 	public boolean isMemberIn(Member member, YearMonth month) {
@@ -45,6 +61,7 @@ public class ContributionRules {
 		}
 		boolean savingsOut = optOut != null && optOut.isOptOutSavings();
 		boolean mgrOut = optOut != null && optOut.isOptOutMgr();
+		ChamaProperties.Contribution settings = settings(month);
 		BigDecimal mmf = savingsOut ? Money.ZERO : Money.of(settings.mmfAmount());
 		BigDecimal mgr = isInMgr(member, month) && !mgrOut ? Money.of(settings.mgrAmount()) : Money.ZERO;
 		return new Portions(mmf, mgr);

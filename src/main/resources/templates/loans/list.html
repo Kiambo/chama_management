@@ -13,7 +13,7 @@
 			<p class="eyebrow">Loans</p>
 			<h1>Loans</h1>
 		</div>
-		<div class="actions" sec:authorize="hasRole('RECORDER')">
+		<div class="actions" sec:authorize="hasRole('TREASURER')">
 			<a class="button" th:href="@{/loans/new(kind='EXISTING_CHECKED')}">Enter an existing loan</a>
 			<a class="button primary" th:href="@{/loans/new}">New loan</a>
 		</div>

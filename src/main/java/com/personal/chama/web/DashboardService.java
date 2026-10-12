@@ -8,6 +8,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import com.personal.chama.loan.LoanFlag;
 import com.personal.chama.loan.LoanService;
 import com.personal.chama.mgr.MgrService;
 import com.personal.chama.pool.OpeningBalanceService;
+import com.personal.chama.settings.SettingsService;
 
 @Service
 public class DashboardService {
@@ -32,17 +34,19 @@ public class DashboardService {
 	private final LoanService loans;
 	private final MgrService mgr;
 	private final ChamaProperties properties;
+	private final SettingsService settings;
 	private final Clock clock;
 
 	public DashboardService(ContributionService contributions, LedgerService ledger,
 			OpeningBalanceService openingBalances, LoanService loans, MgrService mgr, ChamaProperties properties,
-			Clock clock) {
+			SettingsService settings, Clock clock) {
 		this.contributions = contributions;
 		this.ledger = ledger;
 		this.openingBalances = openingBalances;
 		this.loans = loans;
 		this.mgr = mgr;
 		this.properties = properties;
+		this.settings = settings;
 		this.clock = clock;
 	}
 
@@ -58,7 +62,7 @@ public class DashboardService {
 
 		// The "total chama fund": cash plus principal out on loan (decision P1).
 		BigDecimal poolTotal = ledger.poolTotal();
-		BigDecimal goal = Money.of(properties.goalAmount());
+		BigDecimal goal = Money.of(settings.current().goalAmount());
 		int goalPercent = goal.signum() == 0 ? 0
 				: poolTotal.multiply(BigDecimal.valueOf(100)).divide(goal, 0, RoundingMode.DOWN).max(BigDecimal.ZERO)
 						.min(BigDecimal.valueOf(100)).intValue();
@@ -67,7 +71,44 @@ public class DashboardService {
 		return new Dashboard(month, rows, paidIn, expected.size(), ledger.mmfBalance(), ledger.mmfChangeIn(month),
 				mgrCollected, mgrExpected, mgrExpected.subtract(mgrCollected).max(Money.ZERO), goal, goalPercent,
 				openingBalances.isRecorded(), activeLoans, ledger.principalOutstanding(), loanNote(activeLoans),
-				rotation(month, mgrExpected));
+				rotation(month, mgrExpected), goLive(activeLoans));
+	}
+
+	/**
+	 * The go-live steps in order (Phase 6 plan, Q5). Each is ticked when done; the
+	 * checklist disappears once all are.
+	 */
+	private GoLive goLive(List<LoanService.LoanView> activeLoans) {
+		YearMonth cutover = properties.cutoverMonth();
+		boolean membersIn = !contributions.monthOverview(contributions.currentMonth()).isEmpty();
+		boolean opening = openingBalances.isRecorded();
+		boolean loansBeforeCutover = loans.all().stream()
+				.anyMatch(v -> !v.loan().getDisbursedDate().isAfter(openingBalances.openingDate()));
+		Optional<MgrService.RoundView> round = mgr.allRounds().stream().findFirst();
+		boolean rotation = round.isPresent();
+		boolean history = round.map(r -> r.slots().stream()
+				.filter(s -> s.month() != null && s.month().isBefore(cutover))
+				.allMatch(s -> !s.payouts().isEmpty())).orElse(false);
+		String openingDate = openingBalances.openingDate().format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH));
+		List<GoLive.Step> steps = List.of(
+				new GoLive.Step("Add the members", "/members/new", membersIn, null),
+				new GoLive.Step("Enter loans that were out on " + openingDate, "/loans/new?kind=EXISTING_AS_AGREED",
+						loansBeforeCutover || opening, "if any - before the opening balances"),
+				new GoLive.Step("Record the opening balances", "/opening-balances", opening, null),
+				new GoLive.Step("Set up the merry-go-round rotation", "/mgr", rotation, null),
+				new GoLive.Step("Record the payouts made before the app", "/mgr", rotation && history,
+						"as history"));
+		return new GoLive(steps);
+	}
+
+	public record GoLive(List<Step> steps) {
+
+		public boolean done() {
+			return steps.stream().allMatch(Step::done);
+		}
+
+		public record Step(String label, String link, boolean done, String hint) {
+		}
 	}
 
 	/** Who receives this month and who is next, from the current round. */
@@ -83,7 +124,7 @@ public class DashboardService {
 
 	private String payoutStatus(MgrService.SlotView slot, YearMonth month) {
 		return slot == null ? null
-				: payoutStatus(slot.status(), month, LocalDate.now(clock), properties.contribution().dueDay());
+				: payoutStatus(slot.status(), month, LocalDate.now(clock), settings.asOf(month.atDay(1)).contribution().dueDay());
 	}
 
 	/** Paid; Pending up to the due day (the 10th, the latest a payout should happen); Late after it (M1). */
@@ -130,7 +171,8 @@ public class DashboardService {
 	public record Dashboard(YearMonth month, List<MemberMonth> rows, long paidIn, int expectedCount,
 			BigDecimal mmfBalance, BigDecimal mmfChangeThisMonth, BigDecimal mgrCollected, BigDecimal mgrExpected,
 			BigDecimal mgrOutstanding, BigDecimal goal, int goalPercent, boolean openingRecorded,
-			List<LoanService.LoanView> activeLoans, BigDecimal principalOutstanding, String loanNote, Rotation rotation) {
+			List<LoanService.LoanView> activeLoans, BigDecimal principalOutstanding, String loanNote, Rotation rotation,
+			GoLive goLive) {
 
 		public boolean loanAttention() {
 			return activeLoans.stream().anyMatch(v -> v.flag() == LoanFlag.OVERDUE || v.flag() == LoanFlag.DUE_SOON);

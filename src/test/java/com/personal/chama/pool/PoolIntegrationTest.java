@@ -31,7 +31,7 @@ import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberRepository;
 
 @IntegrationTest
-@WithMockUser(username = "recorder-c", roles = "RECORDER")
+@WithMockUser(username = "recorder-c", roles = "TREASURER")
 class PoolIntegrationTest {
 
 	@Autowired

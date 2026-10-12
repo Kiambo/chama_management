@@ -19,12 +19,13 @@ class DashboardIntegrationTest {
 	MockMvc mvc;
 
 	@Test
-	@WithMockUser(username = "lilian", roles = "RECORDER")
+	@WithMockUser(username = "lilian", roles = "TREASURER")
 	void greetsWithCapitalisedNameAndShowsTiles() throws Exception {
 		mvc.perform(get("/"))
 				.andExpect(status().isOk())
 				.andExpect(content().string(containsString(", Lilian</h1>")))
-				.andExpect(content().string(containsString("More is on the way")))
+				.andExpect(content().string(containsString("est. 2024")))
+				.andExpect(content().string(containsString("Merry-go-round rotation")))
 				.andExpect(content().string(containsString("aria-current=\"page\"")));
 	}
 }

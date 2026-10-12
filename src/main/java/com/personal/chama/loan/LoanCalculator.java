@@ -5,11 +5,14 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.personal.chama.common.Money;
 import com.personal.chama.config.ChamaProperties;
+import com.personal.chama.settings.SettingsService;
 
 /**
  * Loan arithmetic (brief 4.4): tiered flat interest, installments, borrowing limits and
@@ -20,14 +23,20 @@ public class LoanCalculator {
 
 	private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
-	private final ChamaProperties.Loan settings;
+	private final Supplier<ChamaProperties.Loan> current;
 
+	/** Fixed settings, for tests. */
 	public LoanCalculator(ChamaProperties properties) {
-		this.settings = properties.loan();
+		this.current = properties::loan;
+	}
+
+	@Autowired
+	public LoanCalculator(SettingsService settings) {
+		this.current = () -> settings.current().loan();
 	}
 
 	public BigDecimal ratePercent(Tenure tenure) {
-		return tenure.ratePercent(settings.rates());
+		return tenure.ratePercent(current.get().rates());
 	}
 
 	/** Interest: once, on the original principal, rounded to whole KES (half up). */
@@ -78,6 +87,7 @@ public class LoanCalculator {
 	 * loan; and what's left under the cap on all loans together. Rounded down to whole KES.
 	 */
 	public BorrowingLimit limit(BigDecimal shares, BigDecimal poolTotal, BigDecimal principalOutstanding) {
+		ChamaProperties.Loan settings = current.get();
 		BigDecimal byShares = floor(shares.multiply(settings.sharesMultiple()));
 		BigDecimal perLoanCap = floor(percentOf(poolTotal, settings.perLoanCapPercent()));
 		BigDecimal headroom = floor(percentOf(poolTotal, settings.totalCapPercent()).subtract(principalOutstanding));
@@ -85,6 +95,7 @@ public class LoanCalculator {
 	}
 
 	public int requiredGuarantors(BigDecimal amount) {
+		ChamaProperties.Loan settings = current.get();
 		if (amount.compareTo(settings.twoGuarantorsAbove()) > 0) {
 			return 2;
 		}
@@ -95,7 +106,7 @@ public class LoanCalculator {
 	}
 
 	public ChamaProperties.Loan settings() {
-		return settings;
+		return current.get();
 	}
 
 	private static BigDecimal percentOf(BigDecimal amount, BigDecimal percent) {

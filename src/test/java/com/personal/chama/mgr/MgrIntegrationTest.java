@@ -36,7 +36,7 @@ import com.personal.chama.member.MemberRepository;
  */
 @IntegrationTest
 @TestPropertySource(properties = "chama.cutover-month=2020-01")
-@WithMockUser(username = "recorder-f", roles = "RECORDER")
+@WithMockUser(username = "recorder-f", roles = "TREASURER")
 class MgrIntegrationTest {
 
 	private static final YearMonth JAN = YearMonth.of(2020, 1);

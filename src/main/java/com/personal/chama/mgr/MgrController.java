@@ -27,20 +27,22 @@ import com.personal.chama.decision.DecisionException;
 import com.personal.chama.decision.DecisionInput;
 import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberService;
+import com.personal.chama.settings.PaymentMethodService;
 
 @Controller
 @RequestMapping("/mgr")
 public class MgrController {
 
-	static final List<String> PAYMENT_METHODS = List.of("M-Pesa", "PayPal", "Bank deposit", "Bank transfer", "Cash");
-
+	private final PaymentMethodService paymentMethods;
 	private final MgrService mgr;
 	private final MemberService memberService;
 	private final YearMonth cutover;
 	private final Clock clock;
 
-	public MgrController(MgrService mgr, MemberService memberService, ChamaProperties properties, Clock clock) {
+	public MgrController(MgrService mgr, MemberService memberService, ChamaProperties properties, Clock clock,
+			PaymentMethodService paymentMethods) {
 		this.mgr = mgr;
+		this.paymentMethods = paymentMethods;
 		this.memberService = memberService;
 		this.cutover = properties.cutoverMonth();
 		this.clock = clock;
@@ -120,7 +122,7 @@ public class MgrController {
 			redirect.addFlashAttribute("error", e.getMessage());
 			return "redirect:/mgr";
 		}
-		model.addAttribute("methods", PAYMENT_METHODS);
+		model.addAttribute("methods", paymentMethods.activeNames());
 		model.addAttribute("today", LocalDate.now(clock));
 		model.addAttribute("cutover", cutover);
 		return "mgr/payout";

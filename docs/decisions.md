@@ -19,6 +19,12 @@ the repo.
 | S5 | A `demo` profile uses a separate `chama_demo` database with made-up data, so the real database stays clean until go-live. | Addition |
 | S6 | The database itself refuses UPDATE and DELETE on ledger entries (a Postgres trigger), on top of the app never doing so. | No |
 | S7 | A reversing entry carries the original entry's date (the time it was recorded shows when), so balances "as at" a date are as if the mistake never happened. | No |
+| S8 | The managing role is called **TREASURER** (the brief calls it RECORDER), at the treasurer's request. Read-only members stay `MEMBER` for later. | Yes (naming) |
+| S9 | The chama is called "Family Chama", established 2024 (`chama.established-year`). | No |
+| S10 | **Settings are changed in the app** (Settings page) by group decision: contribution amounts and due day, loan rates, limits, guarantor thresholds, grace days, late fee, goal. Each change starts on a chosen date (never in the past) and is looked up "as at" the date that matters, so it never rewrites history: a month uses the amounts in force on its 1st (contribution changes start on the 1st of a coming month), a missed payment the grace in force when it was due, a late fee the rules on the day it's charged; loans already out keep their stored rate. The cut-over month can't change. The application.properties values are the defaults before any change. | Extends brief section 3 |
+| S11 | **Payment methods** are a list kept in the app (add, hide - never delete, since old payments use them); "Other..." is always offered. Direct M-Pesa/bank integration stays out of v1. | No |
+| S12 | Each user has a **profile**: their login linked to their member record (greeting, "my page"), email and phone (kept for later reset/reminders), and a password change (at least 12 characters). | No |
+| S13 | **Loan products** (e.g. a car loan with its own rates) and **new tenures** need the loan model reworked; planned as a separate later phase. | Later |
 
 ## Contributions
 
@@ -35,6 +41,7 @@ the repo.
 | C9 | The statement file (PDF, PNG or JPEG, up to 5 MB) can be attached to fund earnings as evidence. The amount is still typed in. |
 | C10 | Opening balances are entered as each member's shares plus the statement balance; the group money is worked out as statement + loans out - shares. They are corrected together (all reversed, then re-entered). |
 | C11 | A **payment reference** (M-Pesa code, PayPal ID, bank reference) can be used only once, across every kind of payment: contributions, loan disbursements and repayments, repayments to guarantors and MGR payouts. Compared without case or spaces. A corrected (reversed) payment releases its reference so the right payment can reuse it. Blank references aren't checked. |
+| C12 | A member's **statement** downloads as a CSV file (opens in Excel/Sheets): shares, contributions by month, loans with their history, MGR payouts, debts between members. |
 
 ## MMF pool and loan caps
 

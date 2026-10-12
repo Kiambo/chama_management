@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.personal.chama.config.ChamaProperties;
 import com.personal.chama.decision.GroupDecision;
 import com.personal.chama.decision.GroupDecisionRepository;
 import com.personal.chama.ledger.LedgerEntry;
@@ -50,9 +51,10 @@ public class LatePaymentService {
 
 	/** The late fee: the higher of the minimum or a % of the installment, in whole KES. */
 	public BigDecimal feeFor(Installment installment) {
-		BigDecimal percent = installment.getAmount().multiply(history.settings().lateFeePercent())
+		ChamaProperties.Loan rules = history.settingsAsOf(history.deadline(installment).plusDays(1));
+		BigDecimal percent = installment.getAmount().multiply(rules.lateFeePercent())
 				.divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
-		return percent.max(history.settings().lateFeeMinimum()).setScale(2);
+		return percent.max(rules.lateFeeMinimum()).setScale(2);
 	}
 
 	@Transactional

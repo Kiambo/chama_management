@@ -5,16 +5,27 @@
 <header th:replace="~{fragments/layout :: header('dashboard')}"></header>
 <section class="hero">
 	<div class="band-inner">
-		<p class="eyebrow" th:text="${@fmt.month(month)}">October 2026</p>
+		<p class="eyebrow" th:text="|${activeMembers} ${activeMembers == 1 ? 'member' : 'members'} · est. ${established} · ${@fmt.month(month)}|">7 members · est. 2024 · October 2026</p>
 		<h1 th:text="|${greeting}, ${name}|">Good evening, Grace</h1>
 		<p class="lede" th:if="${d.expectedCount > 0}"
 		   th:text="|${d.paidIn} of ${d.expectedCount} contributions are in for this month.|">4 of 6 contributions are in for this month.</p>
-		<p class="lede" th:unless="${d.expectedCount > 0}"
-		   th:text="${activeMembers == 1} ? '1 active member.' : |${activeMembers} active members.|">7 active members.</p>
 	</div>
 </section>
 <main class="page">
 	<div th:replace="~{fragments/layout :: flash}"></div>
+
+	<!-- Go-live: the steps in order, ticked off as they're done, until all are. -->
+	<section class="card checklist" th:if="${d.goLive != null and !d.goLive.done()}" sec:authorize="hasRole('TREASURER')">
+		<h2>Getting started</h2>
+		<p class="muted">Enter the real figures in this order. Each step ticks itself off.</p>
+		<ol>
+			<li th:each="step : ${d.goLive.steps()}" th:classappend="${step.done()} ? 'done'">
+				<span class="tick" th:text="${step.done()} ? '✓' : ''"></span>
+				<a th:href="${step.link()}" th:text="${step.label()}">Step</a>
+				<span class="hint" th:if="${step.hint() != null}" th:text="${step.hint()}">hint</span>
+			</li>
+		</ol>
+	</section>
 
 	<div class="card notice danger" th:each="v : ${d.activeLoans.?[loan.awaitingDecision]}">
 		<div class="notice-body">
@@ -24,24 +35,16 @@
 		<a class="button primary" th:href="@{/loans/{id}(id=${v.loan.id})}">Open the loan</a>
 	</div>
 
-	<div class="card notice" th:unless="${d.openingRecorded}" sec:authorize="hasRole('RECORDER')">
-		<div class="notice-body">
-			<h2 class="notice-title">Opening balances not recorded</h2>
-			<p class="muted">Enter each member's shares and the statement balance at the cut-over so the pool starts from the right figure.</p>
-		</div>
-		<a class="button primary" th:href="@{/opening-balances}">Enter opening balances</a>
-	</div>
-
 	<div class="stat-grid two">
 		<div class="card">
-			<p class="stat-label">MMF pool</p>
+			<p class="stat-label">Sanlam MMF pool</p>
 			<p class="stat-value" th:text="${@fmt.kes(d.mmfBalance)}">KES 186,500</p>
 			<p class="stat-sub"
 			   th:classappend="${d.mmfChangeThisMonth.signum() > 0} ? 'good'"
 			   th:text="${d.mmfChangeThisMonth.signum() >= 0} ? |+ ${@fmt.amount(d.mmfChangeThisMonth)} this month| : |${@fmt.amount(d.mmfChangeThisMonth)} this month|">+ 12,000 this month</p>
 		</div>
 		<div class="card">
-			<p class="stat-label" th:text="|MGR pool — ${@fmt.month(month)}|">MGR pool — October 2026</p>
+			<p class="stat-label" th:text="|MGR pool — ${#temporals.format(month.atDay(1), 'MMMM')}|">MGR pool — October</p>
 			<p class="stat-value" th:text="${@fmt.kes(d.mgrCollected)}">KES 6,000</p>
 			<p class="stat-sub" th:classappend="${d.mgrOutstanding.signum() > 0} ? 'attention' : 'good'"
 			   th:text="${d.mgrOutstanding.signum() > 0} ? |${@fmt.amount(d.mgrOutstanding)} of ${@fmt.amount(d.mgrExpected)} outstanding| : 'All in'">3,000 outstanding</p>
@@ -78,61 +81,55 @@
 				<div class="rotation-end">
 					<span class="rotation-amount" th:text="${@fmt.kes(d.rotation.amount)}">KES 9,000</span>
 					<span class="badge" th:classappend="'badge-' + ${d.rotation.payoutTone()}" th:text="${d.rotation.payoutStatus}">Pending</span>
-					<a sec:authorize="hasRole('RECORDER')" th:if="${d.rotation.payoutStatus != 'Paid'}" class="button primary"
+					<a sec:authorize="hasRole('TREASURER')" th:if="${d.rotation.payoutStatus != 'Paid'}" class="button primary"
 					   th:href="@{/mgr/slots/{id}/payout(id=${r.slot.id})}">Pay out</a>
 				</div>
 			</div>
 			<p th:if="${d.rotation.receiving == null}" class="muted">Nobody receives this month.</p>
 			<div class="rotation-next" th:if="${d.rotation.next != null}" th:with="n=${d.rotation.next}">
 				<span class="avatar small" th:text="${n.member.initials}">KM</span>
-				<span>Next up — <strong th:text="${n.member.fullName}">Name</strong>, <span th:text="${@fmt.month(n.month)}">November 2026</span></span>
+				<span>Next up — <strong th:text="${n.member.fullName}">Name</strong>, <span th:text="${#temporals.format(n.month.atDay(1), 'MMMM')}">November</span></span>
 			</div>
 		</th:block>
 	</section>
 
-
 	<section class="card">
 		<div class="card-head">
-			<h2>This month</h2>
-			<a sec:authorize="hasRole('RECORDER')" class="button primary" th:href="@{/contributions/new}">Record contribution</a>
+			<h2>Loans</h2>
+			<a sec:authorize="hasRole('TREASURER')" class="button" th:href="@{/loans/new}">New loan</a>
+		</div>
+		<p th:if="${d.activeLoans.isEmpty()}" class="muted">No loans out.</p>
+		<th:block th:unless="${d.activeLoans.isEmpty()}">
+			<div th:replace="~{loans/rows :: rows(${d.activeLoans})}"></div>
+			<div class="loan-total">
+				<span class="muted">Outstanding principal</span>
+				<span class="muted" th:text="${@fmt.kes(d.principalOutstanding)}">KES 63,000</span>
+			</div>
+		</th:block>
+	</section>
+
+	<div class="actions" sec:authorize="hasRole('TREASURER')">
+		<a class="button primary" th:href="@{/contributions/new}">Record contribution</a>
+	</div>
+
+	<section class="card compact">
+		<div class="card-head">
+			<h2 th:text="|Contributions — ${#temporals.format(month.atDay(1), 'MMMM')}|">Contributions — October</h2>
+			<a class="hint" th:href="@{/contributions}">All months</a>
 		</div>
 		<p th:if="${d.rows.isEmpty()}" class="muted">No members yet. <a th:href="@{/members/new}">Add the first one.</a></p>
 		<div class="table-wrap" th:unless="${d.rows.isEmpty()}">
 			<table>
-				<thead>
-				<tr><th>Member</th><th class="num">Paid</th><th class="num">Owed</th><th>Status</th></tr>
-				</thead>
 				<tbody>
 				<tr th:each="r : ${d.rows}">
 					<td><a th:href="@{/members/{id}(id=${r.member.id})}" th:text="${r.member.fullName}">Name</a></td>
 					<td class="num" th:text="${@fmt.amount(r.paid.total())}">3,500</td>
-					<td class="num" th:text="${@fmt.amount(r.owed().total())}">0</td>
-					<td><span th:replace="~{fragments/layout :: status(${r.status})}"></span></td>
+					<td class="num"><span th:replace="~{fragments/layout :: status(${r.status})}"></span></td>
 				</tr>
 				</tbody>
 			</table>
 		</div>
 	</section>
-
-	<section class="card" th:unless="${d.activeLoans.isEmpty()}">
-		<div class="card-head">
-			<h2>Loans</h2>
-			<a sec:authorize="hasRole('RECORDER')" class="button" th:href="@{/loans/new}">New loan</a>
-		</div>
-		<div th:replace="~{loans/rows :: rows(${d.activeLoans})}"></div>
-		<div class="loan-total">
-			<span class="muted">Outstanding principal</span>
-			<span class="muted" th:text="${@fmt.kes(d.principalOutstanding)}">KES 63,000</span>
-		</div>
-	</section>
-
-	<div class="card notice">
-		<div class="notice-body">
-			<h2 class="notice-title">More is on the way</h2>
-			<p class="muted">The polished dashboard and member pages come next, then go-live with real data.</p>
-		</div>
-		<a class="button" th:href="@{/members}">Manage members</a>
-	</div>
 </main>
 </body>
 </html>

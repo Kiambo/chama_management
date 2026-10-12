@@ -1,8 +1,15 @@
 package com.personal.chama.contribution;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.personal.chama.ledger.LedgerService;
 import com.personal.chama.loan.LoanEvent;
 import com.personal.chama.loan.LoanService;
+import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberService;
 import com.personal.chama.mgr.MgrService;
 
@@ -51,6 +59,21 @@ public class MemberLedgerController {
 			round.slotOf(id).ifPresent(slot -> model.addAttribute("rotationSlot", slot));
 		});
 		return "members/show";
+	}
+
+	/** The member's statement as a CSV file (Phase 6 plan, Q7). */
+	@GetMapping("/members/{id}/statement.csv")
+	@Transactional(readOnly = true)
+	public ResponseEntity<byte[]> statement(@PathVariable Long id) {
+		Member member = memberService.get(id);
+		LocalDate today = contributionService.today();
+		String csv = MemberStatement.build(member, today, ledger.sharesOf(id), contributionService.history(id),
+				loanService.forBorrower(id), loanService::timeline, mgr.payoutsTo(id), loanService.debtsInvolving(id));
+		String file = "statement-" + member.getFullName().toLowerCase().replaceAll("[^a-z0-9]+", "-") + "-" + today + ".csv";
+		return ResponseEntity.ok()
+				.contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+				.header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(file).build().toString())
+				.body(csv.getBytes(StandardCharsets.UTF_8));
 	}
 
 	/** A loan the member took, with everything that happened to it. */

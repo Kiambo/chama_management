@@ -37,14 +37,14 @@ class SecurityIntegrationTest {
 
 	@Test
 	void seededRecorderCanLogIn() throws Exception {
-		mvc.perform(formLogin().user(IntegrationTest.RECORDER).password(IntegrationTest.RECORDER_PASSWORD))
-				.andExpect(authenticated().withUsername(IntegrationTest.RECORDER).withRoles("RECORDER"))
+		mvc.perform(formLogin().user(IntegrationTest.TREASURER).password(IntegrationTest.TREASURER_PASSWORD))
+				.andExpect(authenticated().withUsername(IntegrationTest.TREASURER).withRoles("TREASURER"))
 				.andExpect(redirectedUrl("/"));
 	}
 
 	@Test
 	void wrongPasswordIsRefused() throws Exception {
-		mvc.perform(formLogin().user(IntegrationTest.RECORDER).password("not-the-password"))
+		mvc.perform(formLogin().user(IntegrationTest.TREASURER).password("not-the-password"))
 				.andExpect(unauthenticated())
 				.andExpect(redirectedUrl("/login?error"));
 	}
@@ -58,7 +58,7 @@ class SecurityIntegrationTest {
 
 	@Test
 	void formsWithoutCsrfTokenAreRejected() throws Exception {
-		mvc.perform(post("/members").with(user("recorder").roles("RECORDER"))
+		mvc.perform(post("/members").with(user("recorder").roles("TREASURER"))
 				.param("fullName", "No Token").param("joinDate", "2025-03-01"))
 				.andExpect(status().isForbidden());
 	}

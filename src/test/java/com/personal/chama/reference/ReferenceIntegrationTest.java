@@ -35,7 +35,7 @@ import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberRepository;
 
 @IntegrationTest
-@WithMockUser(username = "recorder-g", roles = "RECORDER")
+@WithMockUser(username = "recorder-g", roles = "TREASURER")
 class ReferenceIntegrationTest {
 
 	private static final YearMonth OCT = YearMonth.of(2026, 10);

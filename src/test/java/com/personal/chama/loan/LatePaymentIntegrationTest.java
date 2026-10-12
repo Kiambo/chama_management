@@ -36,7 +36,7 @@ import com.personal.chama.member.MemberRepository;
  * today. Grace is 5 days; the late fee is the higher of 500 or 5% of the installment.
  */
 @IntegrationTest
-@WithMockUser(username = "recorder-e", roles = "RECORDER")
+@WithMockUser(username = "recorder-e", roles = "TREASURER")
 class LatePaymentIntegrationTest {
 
 	@Autowired

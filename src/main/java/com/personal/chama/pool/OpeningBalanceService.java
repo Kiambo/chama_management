@@ -17,7 +17,7 @@ import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberRepository;
 
 /**
- * Balances at the cut-over (decision C5). The recorder enters each member's shares and
+ * Balances at the cut-over (decision C5). The treasurer enters each member's shares and
  * the MMF statement balance on the day before the cut-over month. The group money
  * (past earnings) is what's left:
  *

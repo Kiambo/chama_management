@@ -15,7 +15,7 @@
 			<p class="muted" th:if="${current != null and current.forMonth(month).isPresent()}"
 			   th:text="|Month ${current.indexOf(current.forMonth(month).get())} of ${current.activeSlots().size()} · ${@fmt.month(month)}|">Month 2 of 7</p>
 		</div>
-		<div class="actions" sec:authorize="hasRole('RECORDER')">
+		<div class="actions" sec:authorize="hasRole('TREASURER')">
 			<a class="button primary" th:if="${current == null or current.complete}" th:href="@{/mgr/rounds/new}"
 			   th:text="${current == null} ? 'Set up the rotation' : |Start Round ${current.round.number + 1}|">Set up</a>
 		</div>
@@ -33,7 +33,7 @@
 		</div>
 		<div class="table-wrap">
 			<table>
-				<thead><tr><th>#</th><th>Member</th><th>Month</th><th class="num">Paid out</th><th>Status</th><th sec:authorize="hasRole('RECORDER')"></th></tr></thead>
+				<thead><tr><th>#</th><th>Member</th><th>Month</th><th class="num">Paid out</th><th>Status</th><th sec:authorize="hasRole('TREASURER')"></th></tr></thead>
 				<tbody>
 				<tr th:each="s : ${r.slots}" th:classappend="${s.status.name() == 'LOST_TURN'} ? 'inactive' : (${s.month == month} ? 'current-row')">
 					<td th:text="${s.slot.position}">1</td>
@@ -53,7 +53,7 @@
 						<span th:if="${s.status.name() == 'UPCOMING'}" class="badge">Upcoming</span>
 						<span th:if="${s.status.name() == 'LOST_TURN'}" class="badge">Lost turn</span>
 					</td>
-					<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+					<td sec:authorize="hasRole('TREASURER')" class="row-actions">
 						<a th:if="${s.status.name() == 'DUE' and !s.month.isBefore(cutover)}" th:href="@{/mgr/slots/{id}/payout(id=${s.slot.id})}">Pay out</a>
 						<form th:if="${s.status.name() == 'DUE' and s.month.isBefore(cutover)}" class="inline-form"
 							  th:action="@{/mgr/slots/{id}/history(id=${s.slot.id})}" method="post">
@@ -76,7 +76,7 @@
 				</tbody>
 			</table>
 		</div>
-		<p class="hint" sec:authorize="hasRole('RECORDER')"
+		<p class="hint" sec:authorize="hasRole('TREASURER')"
 		   th:if="${r.slots.?[!payouts.isEmpty()].isEmpty()}">
 			No payouts yet: <a th:href="@{/mgr/rounds/{id}/order(id=${r.round.id})}">change the order</a>.
 		</p>

@@ -48,7 +48,7 @@
 		the guarantors' shares. Interest goes to the group's pool.</p>
 
 	<h2>Initials</h2>
-	<p class="hint no-print">Each party confirms to the recorder, who enters their initials here. The app records who entered them and when.</p>
+	<p class="hint no-print">Each party confirms to the treasurer, who enters their initials here. The app records who entered them and when.</p>
 
 	<table class="signatures">
 		<thead><tr><th>Party</th><th>Name</th><th>Initials</th><th>Date</th></tr></thead>
@@ -74,7 +74,7 @@
 		</tbody>
 	</table>
 
-	<section class="card no-print" sec:authorize="hasRole('RECORDER')">
+	<section class="card no-print" sec:authorize="hasRole('TREASURER')">
 		<h2>Enter initials</h2>
 		<form th:action="@{/loans/{id}/agreement/initials(id=${loan.id})}" method="post" class="stack">
 			<label>Party

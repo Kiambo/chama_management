@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.personal.chama.IntegrationTest;
 
 @IntegrationTest
-@WithMockUser(username = "recorder-a", roles = "RECORDER")
+@WithMockUser(username = "recorder-a", roles = "TREASURER")
 class MemberIntegrationTest {
 
 	@Autowired

@@ -16,12 +16,12 @@ import org.springframework.context.annotation.Import;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest(properties = {
-		"chama.admin.username=" + IntegrationTest.RECORDER,
-		"chama.admin.password=" + IntegrationTest.RECORDER_PASSWORD })
+		"chama.admin.username=" + IntegrationTest.TREASURER,
+		"chama.admin.password=" + IntegrationTest.TREASURER_PASSWORD })
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 public @interface IntegrationTest {
 
-	String RECORDER = "test-recorder";
-	String RECORDER_PASSWORD = "test-password-123";
+	String TREASURER = "test-treasurer";
+	String TREASURER_PASSWORD = "test-password-123";
 }

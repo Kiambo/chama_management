@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.time.LocalTime;
 import java.time.YearMonth;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -21,13 +22,15 @@ public class HomeController {
 	private final AppUserRepository users;
 	private final MemberService memberService;
 	private final DashboardService dashboardService;
+	private final int established;
 
 	public HomeController(Clock clock, AppUserRepository users, MemberService memberService,
-			DashboardService dashboardService) {
+			DashboardService dashboardService, @Value("${chama.established-year}") int established) {
 		this.clock = clock;
 		this.users = users;
 		this.memberService = memberService;
 		this.dashboardService = dashboardService;
+		this.established = established;
 	}
 
 	@GetMapping("/")
@@ -38,6 +41,7 @@ public class HomeController {
 		model.addAttribute("month", YearMonth.now(clock));
 		model.addAttribute("activeMembers", memberService.listAll().stream().filter(m -> m.isActive()).count());
 		model.addAttribute("d", dashboardService.build());
+		model.addAttribute("established", established);
 		return "dashboard";
 	}
 

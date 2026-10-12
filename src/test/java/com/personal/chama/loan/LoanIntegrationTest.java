@@ -37,7 +37,7 @@ import com.personal.chama.member.MemberRepository;
  * are given to them directly as ledger entries.
  */
 @IntegrationTest
-@WithMockUser(username = "recorder-d", roles = "RECORDER")
+@WithMockUser(username = "recorder-d", roles = "TREASURER")
 class LoanIntegrationTest {
 
 	@Autowired

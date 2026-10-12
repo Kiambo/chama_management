@@ -30,7 +30,7 @@
 			</table>
 		</div>
 
-		<section class="card notice" sec:authorize="hasRole('RECORDER')">
+		<section class="card notice" sec:authorize="hasRole('TREASURER')">
 			<div class="notice-body">
 				<h2 class="notice-title">Need to change these?</h2>
 				<p class="muted">Every opening entry is reversed together, because the group money depends on all of the shares. Then enter the figures again.</p>
@@ -45,7 +45,7 @@
 	</th:block>
 
 	<!-- Not recorded yet: enter, check the worked-out group money, then confirm. -->
-	<form th:unless="${recorded}" th:action="@{/opening-balances}" method="post" class="stack" sec:authorize="hasRole('RECORDER')">
+	<form th:unless="${recorded}" th:action="@{/opening-balances}" method="post" class="stack" sec:authorize="hasRole('TREASURER')">
 		<p th:if="${members.isEmpty()}" class="muted">Add the members first.</p>
 
 		<label th:each="m : ${members}"><span th:text="|${m.fullName}'s shares (KES)|">Name's shares</span>
