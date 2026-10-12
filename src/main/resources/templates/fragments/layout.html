@@ -21,6 +21,8 @@
 			   th:attr="aria-current=${active == 'dashboard'} ? 'page'">Dashboard</a>
 			<a th:href="@{/contributions}" th:classappend="${active == 'contributions'} ? 'current'"
 			   th:attr="aria-current=${active == 'contributions'} ? 'page'">Contributions</a>
+			<a th:href="@{/loans}" th:classappend="${active == 'loans'} ? 'current'"
+			   th:attr="aria-current=${active == 'loans'} ? 'page'">Loans</a>
 			<a th:href="@{/members}" th:classappend="${active == 'members'} ? 'current'"
 			   th:attr="aria-current=${active == 'members'} ? 'page'">Members</a>
 			<a th:href="@{/fund-earnings}" th:classappend="${active == 'pool'} ? 'current'"

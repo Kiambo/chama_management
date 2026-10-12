@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Confirm loan')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('loans')}"></header>
+<main class="page narrow">
+	<p class="eyebrow" th:text="${form.kind.label}">New loan</p>
+	<h1 th:text="|${@fmt.kes(form.amount)} to ${assessment.borrower.fullName}|">KES 45,000 to Name</h1>
+
+	<div class="card">
+		<table>
+			<tbody>
+			<tr><td>Tenure</td><td class="num" th:text="|${terms.tenure.label} (${terms.tenure.tierLabel()})|">6 months</td></tr>
+			<tr><td>Flat interest</td><td class="num" th:text="|${terms.ratePercent.stripTrailingZeros().toPlainString()}% = KES ${@fmt.amount(terms.interest)}|">8% = 3,600</td></tr>
+			<tr><td><strong>Total to repay</strong></td><td class="num"><strong th:text="${@fmt.kes(terms.total)}">KES 48,600</strong></td></tr>
+			<tr><td>Disbursed</td><td class="num" th:text="|${#temporals.format(form.disbursedDate, 'd MMM yyyy')} by ${form.method}|">13 Oct 2026</td></tr>
+			<tr th:if="${!guarantors.isEmpty()}"><td>Guarantors</td>
+				<td class="num"><span th:each="g, s : ${guarantors}" th:text="${g.fullName} + (${s.last} ? '' : ', ')">Name</span></td></tr>
+			<tr th:if="${form.purpose}"><td>Purpose</td><td class="num" th:text="${form.purpose}">School fees</td></tr>
+			<tr th:if="${form.note}"><td>Note</td><td class="num" th:text="${form.note}">Note</td></tr>
+			</tbody>
+		</table>
+	</div>
+
+	<h2>Repayment schedule</h2>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>#</th><th>Due</th><th class="num">Amount</th><th class="num">of which interest</th></tr></thead>
+			<tbody>
+			<tr th:each="i : ${terms.installments}">
+				<td th:text="${i.number}">1</td>
+				<td th:text="${#temporals.format(i.dueDate, 'd MMM yyyy')}">12 Nov 2026</td>
+				<td class="num" th:text="${@fmt.amount(i.amount)}">8,100</td>
+				<td class="num muted" th:text="${@fmt.amount(i.interestPart)}">600</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<p class="muted">Repaying early does not reduce the interest. Saving records the money leaving the pool.</p>
+
+	<form th:action="@{/loans}" method="post" class="actions">
+		<input type="hidden" name="borrowerId" th:value="${form.borrowerId}">
+		<input type="hidden" name="amount" th:value="${form.amount}">
+		<input type="hidden" name="tenure" th:value="${form.tenure}">
+		<input type="hidden" name="guarantorIds" th:each="g : ${form.chosenGuarantors()}" th:value="${g}">
+		<input type="hidden" name="purpose" th:value="${form.purpose}">
+		<input type="hidden" name="disbursedDate" th:value="${form.disbursedDate}">
+		<input type="hidden" name="method" th:value="${form.method}">
+		<input type="hidden" name="reference" th:value="${form.reference}">
+		<input type="hidden" name="kind" th:value="${form.kind}">
+		<input type="hidden" name="schedule" th:value="${form.schedule}">
+		<input type="hidden" name="note" th:value="${form.note}">
+		<button type="submit" class="button primary" name="action" value="disburse"
+				th:text="${form.kind.name() == 'NEW'} ? 'Disburse loan' : 'Save existing loan'">Disburse loan</button>
+		<button type="submit" class="button" name="action" value="edit" th:formaction="@{/loans/edit}">Back</button>
+	</form>
+</main>
+</body>
+</html>

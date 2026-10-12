@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Loans')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('loans')}"></header>
+<main class="page">
+	<div class="title-row">
+		<div>
+			<p class="eyebrow">Loans</p>
+			<h1>Loans</h1>
+		</div>
+		<div class="actions" sec:authorize="hasRole('RECORDER')">
+			<a class="button" th:href="@{/loans/new(kind='EXISTING_CHECKED')}">Enter an existing loan</a>
+			<a class="button primary" th:href="@{/loans/new}">New loan</a>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+
+	<div class="stat-grid">
+		<div class="card">
+			<p class="stat-label">Out on loan</p>
+			<p class="stat-value" th:text="${@fmt.kes(outstanding)}">KES 63,000</p>
+			<p class="stat-sub" th:text="|${active.size()} active|">2 active</p>
+		</div>
+		<div class="card">
+			<p class="stat-label">Cash in the pool</p>
+			<p class="stat-value" th:text="${@fmt.kes(cash)}">KES 123,500</p>
+		</div>
+		<div class="card">
+			<p class="stat-label">Pool total</p>
+			<p class="stat-value" th:text="${@fmt.kes(poolTotal)}">KES 186,500</p>
+			<p class="stat-sub">cash + out on loan</p>
+		</div>
+	</div>
+
+	<section class="card">
+		<h2>Active</h2>
+		<p th:if="${active.isEmpty()}" class="muted">No active loans.</p>
+		<div th:replace="~{loans/rows :: rows(${active})}" th:unless="${active.isEmpty()}"></div>
+	</section>
+
+	<section class="card" th:unless="${closed.isEmpty()}">
+		<h2>Closed</h2>
+		<div th:replace="~{loans/rows :: rows(${closed})}"></div>
+	</section>
+
+</main>
+</body>
+</html>

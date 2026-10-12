@@ -6,7 +6,7 @@
 <section class="hero">
 	<div class="band-inner">
 		<p class="eyebrow" th:text="${@fmt.month(month)}">October 2026</p>
-		<h1 th:text="|${greeting}, ${name}|">Good evening, Lilian</h1>
+		<h1 th:text="|${greeting}, ${name}|">Good evening, Grace</h1>
 		<p class="lede" th:if="${d.expectedCount > 0}"
 		   th:text="|${d.paidIn} of ${d.expectedCount} contributions are in for this month.|">4 of 6 contributions are in for this month.</p>
 		<p class="lede" th:unless="${d.expectedCount > 0}"
@@ -39,9 +39,10 @@
 			   th:text="${d.mgrOutstanding.signum() > 0} ? |${@fmt.amount(d.mgrOutstanding)} of ${@fmt.amount(d.mgrExpected)} outstanding| : 'All in'">3,000 outstanding</p>
 		</div>
 		<div class="card">
-			<p class="stat-label">Contributions</p>
-			<p class="stat-value" th:text="|${d.paidIn} of ${d.expectedCount}|">4 of 6</p>
-			<p class="stat-sub">paid in full this month</p>
+			<p class="stat-label">Active loans</p>
+			<p class="stat-value" th:text="${d.activeLoans.size()}">2</p>
+			<p class="stat-sub" th:classappend="${d.loanOverdue()} ? 'bad' : (${d.loanAttention()} ? 'attention')"
+			   th:text="${d.loanNote}">One payment due Friday</p>
 		</div>
 		<div class="card">
 			<p class="stat-label" th:text="|Goal — ${@fmt.kes(d.goal)}|">Goal — KES 250,000</p>
@@ -75,10 +76,22 @@
 		</div>
 	</section>
 
+	<section class="card" th:unless="${d.activeLoans.isEmpty()}">
+		<div class="card-head">
+			<h2>Loans</h2>
+			<a sec:authorize="hasRole('RECORDER')" class="button" th:href="@{/loans/new}">New loan</a>
+		</div>
+		<div th:replace="~{loans/rows :: rows(${d.activeLoans})}"></div>
+		<div class="loan-total">
+			<span class="muted">Outstanding principal</span>
+			<span class="muted" th:text="${@fmt.kes(d.principalOutstanding)}">KES 63,000</span>
+		</div>
+	</section>
+
 	<div class="card notice">
 		<div class="notice-body">
 			<h2 class="notice-title">More is on the way</h2>
-			<p class="muted">Loans and the merry-go-round arrive in the next phases.</p>
+			<p class="muted">Late fees and recovery, then the merry-go-round, arrive in the next phases.</p>
 		</div>
 		<a class="button" th:href="@{/members}">Manage members</a>
 	</div>

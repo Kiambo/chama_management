@@ -28,7 +28,13 @@
 		</div>
 		<div class="card">
 			<p class="stat-label">Active loan</p>
-			<span class="pill">Coming in Phase 3</span>
+			<th:block th:if="${activeLoan != null}">
+				<p class="stat-value"><a th:href="@{/loans/{id}(id=${activeLoan.loan.id})}" th:text="${@fmt.kes(activeLoan.loan.principal)}">KES 45,000</a></p>
+				<p class="stat-sub" th:classappend="${activeLoan.flag.tone == 'red'} ? 'bad' : (${activeLoan.flag.tone == 'amber'} ? 'attention')"
+				   th:text="${activeLoan.nextDue() != null} ? |${activeLoan.flag.label} · next ${@fmt.amount(activeLoan.nextDue().owed())} on ${#temporals.format(activeLoan.nextDue().installment().dueDate, 'd MMM')}| : ${activeLoan.flag.label}">Payment due 11 September</p>
+			</th:block>
+			<p class="stat-value" th:if="${activeLoan == null}">None</p>
+			<p class="stat-sub" th:each="g : ${guaranteeing}">Guaranteeing <a th:href="@{/loans/{id}(id=${g.id})}" th:text="|${g.borrower.fullName}'s loan|">Name's loan</a></p>
 		</div>
 		<div class="card">
 			<p class="stat-label">MGR payouts received</p>

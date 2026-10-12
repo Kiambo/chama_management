@@ -23,6 +23,10 @@ import com.personal.chama.common.Money;
 import com.personal.chama.config.ChamaProperties;
 import com.personal.chama.contribution.ContributionForm;
 import com.personal.chama.contribution.ContributionService;
+import com.personal.chama.loan.LoanForm;
+import com.personal.chama.loan.LoanKind;
+import com.personal.chama.loan.LoanService;
+import com.personal.chama.loan.Tenure;
 import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberRepository;
 import com.personal.chama.pool.FundEarningService;
@@ -43,16 +47,18 @@ public class DemoDataSeeder implements ApplicationRunner {
 	private final ContributionService contributions;
 	private final OpeningBalanceService openingBalances;
 	private final FundEarningService fundEarnings;
+	private final LoanService loans;
 	private final ChamaProperties properties;
 	private final Clock clock;
 
 	public DemoDataSeeder(MemberRepository members, ContributionService contributions,
-			OpeningBalanceService openingBalances, FundEarningService fundEarnings, ChamaProperties properties,
-			Clock clock) {
+			OpeningBalanceService openingBalances, FundEarningService fundEarnings, LoanService loans,
+			ChamaProperties properties, Clock clock) {
 		this.members = members;
 		this.contributions = contributions;
 		this.openingBalances = openingBalances;
 		this.fundEarnings = fundEarnings;
+		this.loans = loans;
 		this.properties = properties;
 		this.clock = clock;
 	}
@@ -86,12 +92,21 @@ public class DemoDataSeeder implements ApplicationRunner {
 		Member newcomer = members.save(new Member("Gathoni Newcomer", cutover.minusMonths(1).atDay(1),
 				cutover.plusMonths(3).atDay(1)));
 
+		// A loan made before the app on agreed terms: one payment at the end. Entered before
+		// the opening balances, because it was out on the opening date.
+		LoanForm existing = loanForm(newcomer, 50_000, Tenure.FOUR_MONTHS, cutover.minusMonths(2).atDay(28),
+				founders.get(4));
+		existing.setKind(LoanKind.EXISTING_AS_AGREED);
+		existing.setSchedule(LoanForm.Schedule.SINGLE_AT_END);
+		existing.setNote("Agreed before the app: one payment at the end");
+		loans.disburse(existing);
+
 		Map<Long, BigDecimal> shares = new LinkedHashMap<>();
 		long[] amounts = { 34_000, 30_000, 28_000, 34_000, 26_000, 32_000 };
 		for (int i = 0; i < founders.size(); i++) {
 			shares.put(founders.get(i).getId(), Money.of(amounts[i]));
 		}
-		openingBalances.record(shares, Money.of(196_500));
+		openingBalances.record(shares, Money.of(146_500));
 		fundEarnings.record(cutover.minusMonths(1), Money.of(1_850), "Demo statement", null);
 
 		// This month: a mix of paid, late, part-paid and not yet paid.
@@ -103,6 +118,22 @@ public class DemoDataSeeder implements ApplicationRunner {
 		pay(founders.get(2), month, 3500, today, "Bank deposit", false);
 		pay(founders.get(3), month, 2000, onTime, "M-Pesa", false);
 		pay(newcomer, cutover.minusMonths(1), 2000, today, "M-Pesa", true);
+
+		// A new loan, guaranteed, through the normal checks.
+		LoanForm loan = loanForm(founders.get(0), 25_000, Tenure.THREE_MONTHS, today, founders.get(1));
+		loan.setPurpose("School fees");
+		loans.disburse(loan);
+	}
+
+	private LoanForm loanForm(Member borrower, long amount, Tenure tenure, LocalDate date, Member guarantor) {
+		LoanForm form = new LoanForm();
+		form.setBorrowerId(borrower.getId());
+		form.setAmount(BigDecimal.valueOf(amount));
+		form.setTenure(tenure);
+		form.setDisbursedDate(date);
+		form.setMethod("M-Pesa");
+		form.setGuarantorIds(List.of(guarantor.getId()));
+		return form;
 	}
 
 	private void pay(Member member, YearMonth month, long amount, LocalDate paidOn, String method, boolean backpay) {

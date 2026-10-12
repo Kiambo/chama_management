@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Loan agreement')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('loans')}"></header>
+<main class="page narrow agreement" th:with="loan=${v.loan}">
+	<div class="no-print">
+		<div th:replace="~{fragments/layout :: flash}"></div>
+		<div th:replace="~{fragments/layout :: error}"></div>
+		<p><a th:href="@{/loans/{id}(id=${loan.id})}">← Back to the loan</a></p>
+	</div>
+
+	<p class="eyebrow">Family Chama · loan agreement</p>
+	<h1 th:text="|Loan #${loan.id}|">Loan #1</h1>
+
+	<table class="terms">
+		<tbody>
+		<tr><td>Borrower</td><td th:text="${v.borrower.fullName}">Name</td></tr>
+		<tr><td>Amount</td><td th:text="${@fmt.kes(loan.principal)}">KES 45,000</td></tr>
+		<tr><td>Rate</td><td th:text="|${loan.ratePercent.stripTrailingZeros().toPlainString()}% flat, charged once (${loan.tenure.tierLabel()})|">8% flat</td></tr>
+		<tr><td>Interest</td><td th:text="${@fmt.kes(loan.interest)}">KES 3,600</td></tr>
+		<tr><td>Total to repay</td><td th:text="${@fmt.kes(loan.total)}">KES 48,600</td></tr>
+		<tr><td>Tenure</td><td th:text="${loan.tenure.label}">6 months</td></tr>
+		<tr><td>Date</td><td th:text="${#temporals.format(loan.disbursedDate, 'd MMMM yyyy')}">12 June 2026</td></tr>
+		<tr><td>Guarantor(s)</td><td th:text="${v.guarantors.isEmpty()} ? 'None' : ${#strings.listJoin(v.guarantors.![fullName], ', ')}">Name</td></tr>
+		<tr th:if="${loan.purpose}"><td>Purpose</td><td th:text="${loan.purpose}">School fees</td></tr>
+		</tbody>
+	</table>
+
+	<h2>Repayment schedule</h2>
+	<table>
+		<tbody>
+		<tr th:each="line : ${v.schedule.lines()}">
+			<td th:text="${#temporals.format(line.installment().dueDate, 'd MMM yyyy')}">12 Jul 2026</td>
+			<td class="num" th:text="${@fmt.kes(line.installment().amount)}">KES 8,100</td>
+		</tr>
+		</tbody>
+	</table>
+
+	<p class="small">Repaying early does not reduce the interest. A missed payment brings a late fee of the higher of
+		KES 500 or 5% of the installment, per missed month, with no grace period. Two missed payments in a row make
+		the whole balance due. If the borrower falls behind, the amount is first taken from their shares, then from
+		the guarantors' shares. Interest goes to the group's pool.</p>
+
+	<h2>Initials</h2>
+	<p class="hint no-print">Each party confirms to the recorder, who enters their initials here. The app records who entered them and when.</p>
+
+	<table class="signatures">
+		<thead><tr><th>Party</th><th>Name</th><th>Initials</th><th>Date</th></tr></thead>
+		<tbody>
+		<tr th:with="s=${v.signature('BORROWER', null)}">
+			<td>Borrower</td>
+			<td th:text="${v.borrower.fullName}">Name</td>
+			<td th:text="${s != null} ? ${s.initials}">AB</td>
+			<td th:text="${s != null} ? ${#temporals.format(s.signedDate, 'd MMM yyyy')}">12 Jun 2026</td>
+		</tr>
+		<tr th:each="g : ${v.guarantors}" th:with="s=${v.signature('GUARANTOR', g.id)}">
+			<td>Guarantor</td>
+			<td th:text="${g.fullName}">Name</td>
+			<td th:text="${s != null} ? ${s.initials}">AB</td>
+			<td th:text="${s != null} ? ${#temporals.format(s.signedDate, 'd MMM yyyy')}">12 Jun 2026</td>
+		</tr>
+		<tr th:with="s=${v.signature('TREASURER', null)}">
+			<td>Treasurer</td>
+			<td th:text="${s != null} ? ${s.name}">Name</td>
+			<td th:text="${s != null} ? ${s.initials}">AB</td>
+			<td th:text="${s != null} ? ${#temporals.format(s.signedDate, 'd MMM yyyy')}">12 Jun 2026</td>
+		</tr>
+		</tbody>
+	</table>
+
+	<section class="card no-print" sec:authorize="hasRole('RECORDER')">
+		<h2>Enter initials</h2>
+		<form th:action="@{/loans/{id}/agreement/initials(id=${loan.id})}" method="post" class="stack">
+			<label>Party
+				<select name="party" id="party">
+					<option th:unless="${v.signature('BORROWER', null) != null}"
+							value="BORROWER:" th:text="|Borrower — ${v.borrower.fullName}|">Borrower</option>
+					<option th:each="g : ${v.guarantors}" th:unless="${v.signature('GUARANTOR', g.id) != null}"
+							th:value="|GUARANTOR:${g.id}|" th:text="|Guarantor — ${g.fullName}|">Guarantor</option>
+					<option th:unless="${v.signature('TREASURER', null) != null}"
+							value="TREASURER:">Treasurer</option>
+				</select>
+			</label>
+			<input type="hidden" name="role" id="role">
+			<input type="hidden" name="memberId" id="memberId">
+			<label id="treasurer-name">Treasurer's name
+				<input type="text" name="name" maxlength="100">
+			</label>
+			<div class="grid-2">
+				<label>Initials
+					<input type="text" name="initials" maxlength="10" required>
+				</label>
+				<label>Date
+					<input type="date" name="signedDate" th:value="${today}" required>
+				</label>
+			</div>
+			<div class="actions"><button type="submit" class="button primary">Save initials</button></div>
+		</form>
+	</section>
+
+	<p class="no-print"><button type="button" class="button" onclick="window.print()">Print or save as PDF</button></p>
+</main>
+<script>
+	(function () {
+		var party = document.getElementById('party');
+		if (!party) { return; }
+		function sync() {
+			var parts = (party.value || ':').split(':');
+			document.getElementById('role').value = parts[0];
+			document.getElementById('memberId').value = parts[1] || '';
+			document.getElementById('treasurer-name').hidden = parts[0] !== 'TREASURER';
+		}
+		party.addEventListener('change', sync);
+		sync();
+	})();
+</script>
+</body>
+</html>

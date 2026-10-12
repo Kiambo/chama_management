@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import com.personal.chama.ledger.LedgerService;
+import com.personal.chama.loan.LoanService;
 import com.personal.chama.member.MemberService;
 
 /** A member's shares and month-by-month history. The polished version comes in Phase 6. */
@@ -17,12 +18,14 @@ public class MemberLedgerController {
 	private final MemberService memberService;
 	private final ContributionService contributionService;
 	private final LedgerService ledger;
+	private final LoanService loanService;
 
 	public MemberLedgerController(MemberService memberService, ContributionService contributionService,
-			LedgerService ledger) {
+			LedgerService ledger, LoanService loanService) {
 		this.memberService = memberService;
 		this.contributionService = contributionService;
 		this.ledger = ledger;
+		this.loanService = loanService;
 	}
 
 	@GetMapping("/members/{id}")
@@ -32,6 +35,10 @@ public class MemberLedgerController {
 		model.addAttribute("shares", ledger.sharesOf(id));
 		model.addAttribute("history", history);
 		model.addAttribute("paymentCount", history.stream().mapToInt(h -> h.payments().size()).sum());
+		List<LoanService.LoanView> loans = loanService.forBorrower(id);
+		model.addAttribute("activeLoan", loans.stream().filter(v -> v.loan().isActive()).findFirst().orElse(null));
+		model.addAttribute("loans", loans);
+		model.addAttribute("guaranteeing", loanService.guaranteedBy(id));
 		return "members/show";
 	}
 }

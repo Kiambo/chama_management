@@ -56,9 +56,12 @@ public class OpeningBalanceService {
 		return !current().isEmpty();
 	}
 
-	/** Loans still out at the cut-over. Loans arrive in Phase 3; until then there are none. */
+	/**
+	 * Principal still out on loans on the opening date. Enter loans that were out then
+	 * (as existing loans) before recording the opening balances.
+	 */
 	public BigDecimal loansOutAtOpening() {
-		return Money.ZERO;
+		return ledger.principalOutstandingOn(openingDate());
 	}
 
 	public BigDecimal groupMoney(BigDecimal statementBalance, BigDecimal totalShares) {

@@ -24,7 +24,7 @@ class ContributionRulesTest {
 
 	private final ContributionRules rules = new ContributionRules(new ChamaProperties(
 			new ChamaProperties.Contribution(new BigDecimal("2000"), new BigDecimal("1500"), 10),
-			CUTOVER, new BigDecimal("250000")));
+			CUTOVER, new BigDecimal("250000"), null));
 
 	private static Member member(String joined, String mgrStart) {
 		return new Member("Test Member", LocalDate.parse(joined), mgrStart == null ? null : LocalDate.parse(mgrStart));
@@ -198,7 +198,7 @@ class ContributionRulesTest {
 		void dueDayIsCappedAtTheEndOfShortMonths() {
 			ContributionRules day31 = new ContributionRules(new ChamaProperties(
 					new ChamaProperties.Contribution(new BigDecimal("2000"), new BigDecimal("1500"), 31),
-					CUTOVER, new BigDecimal("250000")));
+					CUTOVER, new BigDecimal("250000"), null));
 			assertThat(day31.dueDate(YearMonth.of(2027, 2))).isEqualTo(LocalDate.of(2027, 2, 28));
 		}
 	}

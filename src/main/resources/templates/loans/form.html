@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${form.kind.name() == 'NEW'} ? 'New loan' : 'Existing loan')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('loans')}"></header>
+<main class="page narrow" th:with="existing=${form.kind.name() != 'NEW'}, asAgreed=${form.kind.name() == 'EXISTING_AS_AGREED'}">
+	<p class="eyebrow">Loans</p>
+	<h1 th:text="${existing} ? 'Enter an existing loan' : 'New loan application'">New loan application</h1>
+	<p class="muted" th:unless="${existing}">The limit is the lowest of 3 x shares, the per-loan cap and what's left under the cap on all loans.</p>
+	<p class="muted" th:if="${existing}">For a loan made before the app. It goes into the ledger with its real date.</p>
+
+	<form th:action="@{/loans}" th:object="${form}" method="post" class="stack" novalidate id="loan-form"
+		  th:attr="data-one-above=${settings.oneGuarantorAbove()},data-two-above=${settings.twoGuarantorsAbove()},
+				   data-as-agreed=${asAgreed}">
+
+		<span hidden class="rate" th:each="t : ${tenures}" th:data-tenure="${t}" th:data-rate="${rates[t.name()]}"></span>
+
+		<div th:if="${#fields.hasGlobalErrors()}" class="alert alert-red">
+			<p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Error</p>
+		</div>
+
+		<input type="hidden" th:field="*{kind}" th:unless="${existing}">
+		<label th:if="${existing}">How was it agreed?
+			<select th:field="*{kind}" data-reload>
+				<option value="EXISTING_CHECKED">Checked against the policy</option>
+				<option value="EXISTING_AS_AGREED">Recorded as agreed (rules not re-checked)</option>
+			</select>
+		</label>
+
+		<label>Borrower
+			<select th:field="*{borrowerId}" data-reload>
+				<option value="">Choose…</option>
+				<option th:each="m : ${borrowers}" th:value="${m.id}" th:text="${m.fullName}">Name</option>
+			</select>
+			<span class="field-error" th:if="${#fields.hasErrors('borrowerId')}" th:errors="*{borrowerId}">Error</span>
+		</label>
+
+		<div class="facts" th:if="${assessment != null}">
+			<div>
+				<p class="stat-label">Current shares</p>
+				<p class="serif-amount" th:text="${@fmt.kes(assessment.shares)}">KES 34,000</p>
+			</div>
+			<div>
+				<p class="stat-label">Borrowing limit</p>
+				<p class="serif-amount accent" th:text="${@fmt.kes(assessment.limit.limit())}">KES 64,000</p>
+				<p class="hint" th:text="|Set by ${assessment.limit.bindingDescription()}|">Set by 3 x shares</p>
+			</div>
+			<div>
+				<p class="stat-label">Existing loan</p>
+				<p class="serif-amount" th:text="${assessment.activeLoan != null} ? ${@fmt.kes(assessment.activeLoan.principal)} : 'None'">None</p>
+			</div>
+		</div>
+		<details class="limits" th:if="${assessment != null}">
+			<summary>How the limit is worked out</summary>
+			<table>
+				<tbody>
+				<tr th:classappend="${assessment.limit.binding().name() == 'SHARES'} ? 'binding'">
+					<td th:text="|${settings.sharesMultiple().stripTrailingZeros().toPlainString()} x shares|">3 x shares</td>
+					<td class="num" th:text="${@fmt.amount(assessment.limit.byShares())}">102,000</td></tr>
+				<tr th:classappend="${assessment.limit.binding().name() == 'PER_LOAN_CAP'} ? 'binding'">
+					<td th:text="|${settings.perLoanCapPercent().stripTrailingZeros().toPlainString()}% of the pool, per loan|">50%</td>
+					<td class="num" th:text="${@fmt.amount(assessment.limit.perLoanCap())}">95,000</td></tr>
+				<tr th:classappend="${assessment.limit.binding().name() == 'TOTAL_CAP'} ? 'binding'">
+					<td th:text="|${settings.totalCapPercent().stripTrailingZeros().toPlainString()}% cap on all loans, minus loans already out|">60%</td>
+					<td class="num" th:text="${@fmt.amount(assessment.limit.headroom())}">64,000</td></tr>
+				</tbody>
+			</table>
+		</details>
+		<div class="alert alert-red" th:if="${assessment != null and !assessment.eligible() and !asAgreed}">
+			<p th:each="b : ${assessment.blockers}" th:text="${b}">Blocker</p>
+		</div>
+
+		<div class="grid-2">
+			<label>Loan amount (KES)
+				<input type="number" th:field="*{amount}" min="1" step="1" inputmode="numeric" id="amount">
+				<span class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">Error</span>
+			</label>
+			<label>Tenure
+				<select th:field="*{tenure}" id="tenure">
+					<option value="">Choose…</option>
+					<option th:each="t : ${tenures}" th:value="${t}"
+							th:text="|${t.label} · ${rates[t.name()].stripTrailingZeros().toPlainString()}% flat|">6 months · 8% flat</option>
+				</select>
+				<span class="field-error" th:if="${#fields.hasErrors('tenure')}" th:errors="*{tenure}">Error</span>
+			</label>
+		</div>
+
+		<label th:if="${asAgreed}">Repayment
+			<select th:field="*{schedule}" id="schedule">
+				<option value="STANDARD">Standard schedule</option>
+				<option value="SINGLE_AT_END">One payment at the end</option>
+			</select>
+		</label>
+
+		<div class="card split" id="preview" hidden>
+			<p class="eyebrow">Terms</p>
+			<div class="split-cols">
+				<div>
+					<p class="muted">Interest (<span id="p-rate"></span>% flat, <span id="p-tier"></span>)</p>
+					<p class="split-amount">KES <span id="p-interest"></span></p>
+				</div>
+				<div>
+					<p class="muted">Total to repay</p>
+					<p class="split-amount">KES <span id="p-total"></span></p>
+				</div>
+			</div>
+			<p class="split-foot hint" id="p-installments"></p>
+		</div>
+
+		<div class="alert alert-amber" id="guarantor-note" hidden></div>
+
+		<div class="grid-2" th:if="${guarantorOptions != null}" id="guarantors">
+			<label th:each="slot : ${#numbers.sequence(0, 1)}" th:attr="data-slot=${slot}">
+				<span th:text="|Guarantor ${slot + 1}|">Guarantor 1</span>
+				<select name="guarantorIds">
+					<option value="">None</option>
+					<option th:each="g : ${guarantorOptions}" th:value="${g.member.id}"
+							th:disabled="${!g.eligible() and !asAgreed}"
+							th:selected="${form.guarantorIds != null and form.guarantorIds.size() > slot and form.guarantorIds[slot] == g.member.id}"
+							th:text="${g.eligible()} ? |${g.member.fullName} · shares ${@fmt.amount(g.shares)}| : |${g.member.fullName} — ${g.problem}|">Name</option>
+				</select>
+			</label>
+		</div>
+
+		<label>Purpose (optional)
+			<input type="text" th:field="*{purpose}" maxlength="300">
+		</label>
+
+		<div class="grid-2">
+			<label>Date disbursed
+				<input type="date" th:field="*{disbursedDate}">
+				<span class="field-error" th:if="${#fields.hasErrors('disbursedDate')}" th:errors="*{disbursedDate}">Error</span>
+			</label>
+			<label>Paid out by
+				<input type="text" th:field="*{method}" list="methods" maxlength="50">
+				<datalist id="methods"><option th:each="m : ${methods}" th:value="${m}"></option></datalist>
+				<span class="field-error" th:if="${#fields.hasErrors('method')}" th:errors="*{method}">Error</span>
+			</label>
+		</div>
+		<label>Reference
+			<input type="text" th:field="*{reference}" maxlength="100">
+		</label>
+
+		<label th:if="${existing}">Note <span th:if="${asAgreed}">(required: why it's recorded as agreed)</span>
+			<input type="text" th:field="*{note}" maxlength="500">
+			<span class="field-error" th:if="${#fields.hasErrors('note')}" th:errors="*{note}">Error</span>
+		</label>
+
+		<div class="actions">
+			<button type="submit" class="button primary" name="action" value="review">Review</button>
+			<a class="button" th:href="@{/loans}">Cancel</a>
+		</div>
+	</form>
+</main>
+<script>
+	(function () {
+		var form = document.getElementById('loan-form');
+		// Changing borrower or kind reloads the page with that borrower's limit and guarantor options.
+		form.querySelectorAll('[data-reload]').forEach(function (select) {
+			select.addEventListener('change', function () {
+				var borrower = document.getElementById('borrowerId').value;
+				var kind = form.querySelector('[name=kind]').value;
+				var url = '/loans/new?kind=' + encodeURIComponent(kind);
+				if (borrower) { url += '&borrowerId=' + encodeURIComponent(borrower); }
+				window.location = url;
+			});
+		});
+
+		// Live terms: flat interest rounded to whole KES; equal installments, remainder on the last.
+		var rates = {};
+		form.querySelectorAll('.rate').forEach(function (r) { rates[r.dataset.tenure] = parseFloat(r.dataset.rate); });
+		var months = { TWO_WEEKS: 0, ONE_MONTH: 1, TWO_MONTHS: 2, THREE_MONTHS: 3, FOUR_MONTHS: 4, FIVE_MONTHS: 5, SIX_MONTHS: 6 };
+		var tiers = { TWO_WEEKS: 'up to 2 weeks', ONE_MONTH: 'up to 1 month', TWO_MONTHS: '2 to 3 months',
+			THREE_MONTHS: '2 to 3 months', FOUR_MONTHS: '4 to 6 months', FIVE_MONTHS: '4 to 6 months', SIX_MONTHS: '4 to 6 months' };
+		var oneAbove = parseFloat(form.dataset.oneAbove), twoAbove = parseFloat(form.dataset.twoAbove);
+		var asAgreed = form.dataset.asAgreed === 'true';
+		var fmt = new Intl.NumberFormat('en-KE');
+		var amount = document.getElementById('amount'), tenure = document.getElementById('tenure');
+		var schedule = document.getElementById('schedule');
+
+		function update() {
+			var a = Math.floor(parseFloat(amount.value) || 0), t = tenure.value;
+			var preview = document.getElementById('preview');
+			if (a > 0 && t) {
+				var interest = Math.round(a * rates[t] / 100), total = a + interest;
+				var n = (months[t] <= 1 || (schedule && schedule.value === 'SINGLE_AT_END')) ? 1 : months[t];
+				var each = Math.round(total / n), last = total - each * (n - 1);
+				document.getElementById('p-rate').textContent = rates[t];
+				document.getElementById('p-tier').textContent = tiers[t];
+				document.getElementById('p-interest').textContent = fmt.format(interest);
+				document.getElementById('p-total').textContent = fmt.format(total);
+				document.getElementById('p-installments').textContent = n === 1
+					? 'One payment of KES ' + fmt.format(total) + '.'
+					: n + ' monthly installments of KES ' + fmt.format(each) + (last !== each ? ' (last one ' + fmt.format(last) + ')' : '') + '.';
+				preview.hidden = false;
+			} else {
+				preview.hidden = true;
+			}
+			var required = a > twoAbove ? 2 : (a > oneAbove ? 1 : 0);
+			var note = document.getElementById('guarantor-note');
+			note.hidden = a <= 0;
+			note.textContent = required === 0 ? 'Up to KES ' + fmt.format(oneAbove) + ': no guarantor needed.'
+				: (required === 1 ? 'KES ' + fmt.format(oneAbove + 1) + ' to ' + fmt.format(twoAbove) + ': 1 guarantor required.'
+					: 'Above KES ' + fmt.format(twoAbove) + ': 2 guarantors required.')
+				+ (required > 0 ? ' Each needs at least the minimum shares and no arrears.' : '');
+			document.querySelectorAll('#guarantors [data-slot]').forEach(function (slot) {
+				var show = asAgreed || parseInt(slot.dataset.slot, 10) < required;
+				slot.hidden = !show;
+				if (!show) { slot.querySelector('select').value = ''; }
+			});
+		}
+		[amount, tenure, schedule].forEach(function (el) { if (el) { el.addEventListener('input', update); el.addEventListener('change', update); } });
+		update();
+	})();
+</script>
+</body>
+</html>

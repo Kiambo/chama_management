@@ -269,3 +269,37 @@ input[type="file"] { padding: 0.5rem; }
 	position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
 	overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
+
+/* Phase 3: loans */
+.serif-amount { font-family: var(--serif); font-size: 1.35rem; font-weight: 600; color: var(--ink); margin: 0; }
+.serif-amount.accent { color: var(--rose-ink); }
+.stat-sub.bad { color: var(--red); }
+.stat-value a { color: inherit; text-decoration: none; }
+
+.facts { display: flex; flex-wrap: wrap; gap: 1.5rem 2.5rem; padding: 1rem 0; border-block: 1px solid var(--card-border); }
+.facts p { margin: 0.1rem 0; }
+.limits summary { cursor: pointer; color: var(--plum); font-size: 0.9rem; }
+.limits table { margin-top: 0.5rem; }
+.limits tr.binding td { font-weight: 600; color: var(--plum); }
+
+.alert-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid #ecd2a8; }
+
+.loan-rows { display: flex; flex-direction: column; }
+.loan-row {
+	display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; justify-content: space-between; align-items: center;
+	padding: 0.9rem 0; border-bottom: 1px solid var(--card-border); color: var(--ink); text-decoration: none;
+}
+.loan-row:hover strong { color: var(--plum); }
+.loan-row-end { display: flex; gap: 0.75rem; align-items: center; }
+.loan-total { display: flex; justify-content: space-between; padding-top: 0.9rem; }
+
+.agreement .terms td:first-child { color: var(--muted); width: 40%; }
+.agreement .small { font-size: 0.85rem; color: var(--muted); }
+.signatures td { height: 2.4rem; }
+
+@media print {
+	.site-header, .no-print, .flash { display: none !important; }
+	body { background: #fff; }
+	.page { padding: 0; max-width: none; }
+	.card { border: 0; padding: 0; }
+}

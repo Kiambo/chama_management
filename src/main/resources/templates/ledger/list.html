@@ -47,12 +47,13 @@
 				<td th:text="${e.member != null} ? ${e.member.fullName} : '—'">Name</td>
 				<td th:text="${@fmt.month(e.month)}">October 2026</td>
 				<td class="num" th:text="${@fmt.amount(e.amount)}">2,000</td>
-				<td class="hint" th:text="|#${e.id} · ${e.recordedBy}|">#1 · lilian</td>
+				<td class="hint" th:text="|#${e.id} · ${e.recordedBy}|">#1 · recorder</td>
 				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
 					<th:block th:unless="${e.reversal or reversed.contains(e.id)}">
 						<a th:if="${e.contributionId != null}" th:href="@{/contributions/{id}/correct(id=${e.contributionId})}">Correct</a>
 						<a th:if="${e.fundEarningId != null}" th:href="@{/fund-earnings/{id}/correct(id=${e.fundEarningId})}">Correct</a>
 						<a th:if="${e.type.name().startsWith('OPENING')}" th:href="@{/opening-balances}">Correct</a>
+						<a th:if="${e.loanId != null}" th:href="@{/loans/{id}(id=${e.loanId})}">Loan</a>
 					</th:block>
 				</td>
 			</tr>

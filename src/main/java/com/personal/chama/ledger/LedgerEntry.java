@@ -56,6 +56,12 @@ public class LedgerEntry {
 	@Column(name = "fund_earning_id")
 	private Long fundEarningId;
 
+	@Column(name = "loan_id")
+	private Long loanId;
+
+	@Column(name = "repayment_id")
+	private Long repaymentId;
+
 	@Column(name = "period_month")
 	private YearMonth month;
 
@@ -111,14 +117,28 @@ public class LedgerEntry {
 		return entry;
 	}
 
-	/** An entry with the opposite amount that cancels this one. Both stay in the history. */
-	LedgerEntry reversal(String reason, LocalDate today) {
+	public static LedgerEntry forLoan(LedgerEntryType type, BigDecimal amount, Member borrower, LocalDate date,
+			Long loanId, Long repaymentId, String note) {
+		LedgerEntry entry = new LedgerEntry(type, amount, borrower, null, date, note);
+		entry.loanId = loanId;
+		entry.repaymentId = repaymentId;
+		return entry;
+	}
+
+	/**
+	 * An entry with the opposite amount that cancels this one. Both stay in the history.
+	 * It carries the original's effective date, so balances "as at" any date are as if
+	 * the mistake never happened; recordedAt shows when the correction was made.
+	 */
+	LedgerEntry reversal(String reason) {
 		if (reversesId != null) {
 			throw new IllegalStateException("A reversal cannot itself be reversed; record a new entry instead");
 		}
-		LedgerEntry reversal = new LedgerEntry(type, amount.negate(), member, month, today, "Reversal: " + reason);
+		LedgerEntry reversal = new LedgerEntry(type, amount.negate(), member, month, effectiveDate, "Reversal: " + reason);
 		reversal.contributionId = contributionId;
 		reversal.fundEarningId = fundEarningId;
+		reversal.loanId = loanId;
+		reversal.repaymentId = repaymentId;
 		reversal.reversesId = id;
 		return reversal;
 	}
@@ -149,6 +169,14 @@ public class LedgerEntry {
 
 	public Long getFundEarningId() {
 		return fundEarningId;
+	}
+
+	public Long getLoanId() {
+		return loanId;
+	}
+
+	public Long getRepaymentId() {
+		return repaymentId;
 	}
 
 	public YearMonth getMonth() {

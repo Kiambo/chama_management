@@ -18,6 +18,7 @@ the repo.
 | S4 | Time zone Africa/Nairobi. Foreign payments (PayPal, deposits) are entered in KES as received. | No |
 | S5 | A `demo` profile uses a separate `chama_demo` database with made-up data, so the real database stays clean until go-live. | Addition |
 | S6 | The database itself refuses UPDATE and DELETE on ledger entries (a Postgres trigger), on top of the app never doing so. | No |
+| S7 | A reversing entry carries the original entry's date (the time it was recorded shows when), so balances "as at" a date are as if the mistake never happened. | No |
 
 ## Contributions
 
@@ -54,6 +55,12 @@ the repo.
 | L6 | "Payment due soon" = due within 7 days. |
 | L7 | Loan extensions and restructures get their own screens in v1 (Phase 4). |
 | L8 | Loans made before the app can be entered as **existing loans** with their original dates. Two kinds: "recorded as agreed" (rules not re-checked, a custom repayment schedule allowed, with a note) and "checked against the policy". Late-fee and recovery rules apply to both from go-live. |
+| L9 | Each loan has a one-page **agreement** (amount, rate, tenure, guarantors, date, schedule). Parties initial it digitally: in v1 the recorder enters each party's initials after they confirm, and the app records who entered them and when. Signing links for members may come after deployment. |
+| L10 | A repayment goes to the oldest unpaid installment first; within it, interest before principal. Paying off early means paying all remaining principal and interest. Paying more than the remaining balance is refused. |
+| L11 | Only the **most recent** repayment on a loan can be corrected, so the interest/principal split of earlier repayments never changes. |
+| L12 | Loan amounts are whole KES. "No arrears" (borrowers and guarantors) means no contribution owed past its due day and no loan installment overdue; opted-out months don't count. |
+| L13 | A loan entered by mistake can be **cancelled** (status `CANCELLED`, not in the brief's list) before any repayment; its disbursement is reversed. |
+| L14 | Limits are rounded down to whole KES. The per-loan and total caps use the pool total at the moment the loan is checked. |
 
 ## Late payment and recovery (follows the loan policy, **deviation from brief**)
 

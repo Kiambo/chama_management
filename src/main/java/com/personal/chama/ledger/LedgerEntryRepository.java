@@ -33,6 +33,16 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, Long> 
 	@Query("select e.member.id, coalesce(sum(e.amount), 0) from LedgerEntry e where e.type in :types and e.member is not null group by e.member.id")
 	List<Object[]> sumByTypesPerMember(@Param("types") Collection<LedgerEntryType> types);
 
+	@Query("select coalesce(sum(e.amount), 0) from LedgerEntry e where e.type in :types and e.loanId = :loanId")
+	BigDecimal sumByTypesForLoan(@Param("types") Collection<LedgerEntryType> types, @Param("loanId") Long loanId);
+
+	@Query("select coalesce(sum(e.amount), 0) from LedgerEntry e where e.type in :types and e.effectiveDate <= :date")
+	BigDecimal sumByTypesUpTo(@Param("types") Collection<LedgerEntryType> types, @Param("date") LocalDate date);
+
+	List<LedgerEntry> findByRepaymentIdAndReversesIdIsNull(Long repaymentId);
+
+	List<LedgerEntry> findByLoanIdAndTypeAndReversesIdIsNull(Long loanId, LedgerEntryType type);
+
 	boolean existsByReversesId(Long reversesId);
 
 	List<LedgerEntry> findByContributionIdAndReversesIdIsNull(Long contributionId);

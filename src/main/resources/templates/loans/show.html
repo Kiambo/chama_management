@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Loan')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('loans')}"></header>
+<main class="page" th:with="loan=${v.loan}">
+	<div class="title-row">
+		<div>
+			<p class="eyebrow" th:text="${loan.kind.label}">New loan</p>
+			<h1 th:text="|${@fmt.kes(loan.principal)} to ${v.borrower.fullName}|">KES 45,000 to Name</h1>
+			<p class="muted">
+				Disbursed <span th:text="${#temporals.format(loan.disbursedDate, 'd MMMM yyyy')}">12 June 2026</span>
+				· <span th:text="${loan.tenure.label}">6 months</span>
+				at <span th:text="|${loan.ratePercent.stripTrailingZeros().toPlainString()}% flat|">8% flat</span>
+				<span th:if="${loan.purpose}" th:text="| · ${loan.purpose}|"> · purpose</span>
+			</p>
+		</div>
+		<div class="actions">
+			<span th:if="${v.flag.name() != 'CLOSED'}" class="badge" th:classappend="'badge-' + ${v.flag.tone}" th:text="${v.flag.label}">On track</span>
+			<span th:if="${v.flag.name() == 'CLOSED'}" class="badge" th:text="${loan.status.label}">Repaid</span>
+			<a class="button" th:href="@{/loans/{id}/agreement(id=${loan.id})}">Agreement</a>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<p class="alert alert-red" th:if="${loan.cancelReason}" th:text="|Cancelled: ${loan.cancelReason}|">Cancelled</p>
+	<p class="hint" th:if="${loan.note}" th:text="|Note: ${loan.note}|">Note</p>
+
+	<div class="stat-grid">
+		<div class="card">
+			<p class="stat-label">Still to repay</p>
+			<p class="stat-value" th:text="${@fmt.kes(v.remaining())}">KES 40,500</p>
+			<p class="stat-sub" th:text="|of ${@fmt.amount(loan.total)} (interest ${@fmt.amount(loan.interest)})|">of 48,600</p>
+		</div>
+		<div class="card">
+			<p class="stat-label">Principal outstanding</p>
+			<p class="stat-value" th:text="${@fmt.kes(v.principalOutstanding)}">KES 37,500</p>
+			<p class="stat-sub" th:text="|interest paid ${@fmt.amount(v.interestPaid)}|">interest paid 600</p>
+		</div>
+		<div class="card">
+			<p class="stat-label">Next payment</p>
+			<th:block th:if="${v.nextDue() != null and loan.active}">
+				<p class="stat-value" th:text="${@fmt.kes(v.nextDue().owed())}">KES 8,100</p>
+				<p class="stat-sub" th:classappend="${v.flag.name() == 'OVERDUE'} ? 'bad' : (${v.flag.name() == 'DUE_SOON'} ? 'attention')"
+				   th:text="|due ${#temporals.format(v.nextDue().installment().dueDate, 'EEE d MMM yyyy')}|">due Fri 16 Oct</p>
+			</th:block>
+			<p class="stat-value" th:unless="${v.nextDue() != null and loan.active}">—</p>
+		</div>
+	</div>
+
+	<p th:if="${!v.guarantors.isEmpty()}" class="muted">
+		Guaranteed by <span th:each="g, s : ${v.guarantors}"><a th:href="@{/members/{id}(id=${g.id})}" th:text="${g.fullName}">Name</a><span th:unless="${s.last}">, </span></span>
+	</p>
+
+	<h2>Schedule</h2>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>#</th><th>Due</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Owed</th><th></th></tr></thead>
+			<tbody>
+			<tr th:each="line : ${v.schedule.lines()}">
+				<td th:text="${line.installment().number}">1</td>
+				<td th:text="${#temporals.format(line.installment().dueDate, 'd MMM yyyy')}">12 Jul 2026</td>
+				<td class="num" th:text="${@fmt.amount(line.installment().amount)}">8,100</td>
+				<td class="num" th:text="${@fmt.amount(line.paid())}">8,100</td>
+				<td class="num" th:text="${@fmt.amount(line.owed())}">0</td>
+				<td>
+					<span th:if="${line.paid}" class="badge badge-green">Paid</span>
+					<span th:if="${!line.paid and line.installment().dueDate.isBefore(today)}" class="badge badge-red">Overdue</span>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<section class="card" sec:authorize="hasRole('RECORDER')" th:if="${loan.active}">
+		<h2>Record a repayment</h2>
+		<p class="muted">Goes to the oldest unpaid installment first: interest, then principal.</p>
+		<form th:action="@{/loans/{id}/repayments(id=${loan.id})}" method="post" class="stack">
+			<div class="grid-2">
+				<label>Amount (KES)
+					<input type="number" name="amount" min="1" step="0.01" inputmode="decimal"
+						   th:value="${v.nextDue() != null} ? ${v.nextDue().owed()}" required>
+				</label>
+				<label>Date paid
+					<input type="date" name="paidDate" th:value="${today}" required>
+				</label>
+				<label>Method
+					<input type="text" name="method" list="methods" value="M-Pesa" maxlength="50" required>
+					<datalist id="methods"><option th:each="m : ${methods}" th:value="${m}"></option></datalist>
+				</label>
+				<label>Reference
+					<input type="text" name="reference" maxlength="100">
+				</label>
+			</div>
+			<p class="hint" th:text="|To pay off the whole loan: KES ${@fmt.amount(v.remaining())} (early repayment doesn't reduce the interest).|">To pay off</p>
+			<div class="actions"><button type="submit" class="button primary">Save repayment</button></div>
+		</form>
+	</section>
+
+	<h2>Repayments</h2>
+	<p th:if="${v.repayments.isEmpty()}" class="muted">None yet.</p>
+	<div class="table-wrap" th:unless="${v.repayments.isEmpty()}">
+		<table>
+			<thead><tr><th>Paid on</th><th class="num">Amount</th><th>Method</th><th sec:authorize="hasRole('RECORDER')"></th></tr></thead>
+			<tbody>
+			<tr th:each="r : ${v.repayments}" th:classappend="${r.voided} ? 'inactive'">
+				<td th:text="${#temporals.format(r.paidDate, 'd MMM yyyy')}">12 Jul 2026</td>
+				<td class="num"><span th:text="${@fmt.amount(r.amount)}" th:classappend="${r.voided} ? 'struck'">8,100</span></td>
+				<td>
+					<span th:text="${r.method}">M-Pesa</span>
+					<span class="hint" th:if="${r.reference}" th:text="| · ${r.reference}|"></span>
+					<span class="hint" th:if="${r.voided}" th:text="| · reversed: ${r.voidReason}|"></span>
+				</td>
+				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+					<a th:if="${r.id == v.correctableRepaymentId}" th:href="@{/loans/{id}/repayments/{rid}/correct(id=${loan.id}, rid=${r.id})}">Correct</a>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<p sec:authorize="hasRole('RECORDER')" th:if="${loan.active and v.correctableRepaymentId == null}" class="hint">
+		Entered by mistake? <a th:href="@{/loans/{id}/cancel(id=${loan.id})}">Cancel this loan</a>.
+	</p>
+</main>
+</body>
+</html>

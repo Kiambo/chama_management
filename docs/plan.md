@@ -13,7 +13,7 @@ work stops after each phase for review.
    status per member per month (Paid, Paid late, Missed, Partly paid, Opted
    out), opening balances at the cut-over, fund earnings, pool balance from
    the ledger only, corrections by reversing entry.
-3. **Loans**: borrowing limit (lowest of three rules, binding rule shown),
+3. **Loans** (done, see `phase-3-plan.md`): borrowing limit (lowest of three rules, binding rule shown),
    tenure tiers, interest and installment preview, guarantor validation,
    disbursement, repayments (fees, then interest, then principal), existing
    loans ("recorded as agreed" or "checked against the policy"). Tests for

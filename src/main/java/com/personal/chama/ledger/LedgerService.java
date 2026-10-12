@@ -1,7 +1,6 @@
 package com.personal.chama.ledger;
 
 import java.math.BigDecimal;
-import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.HashMap;
@@ -22,11 +21,9 @@ import com.personal.chama.common.Money;
 public class LedgerService {
 
 	private final LedgerEntryRepository entries;
-	private final Clock clock;
 
-	public LedgerService(LedgerEntryRepository entries, Clock clock) {
+	public LedgerService(LedgerEntryRepository entries) {
 		this.entries = entries;
-		this.clock = clock;
 	}
 
 	@Transactional
@@ -42,7 +39,7 @@ public class LedgerService {
 		if (entries.existsByReversesId(entryId)) {
 			throw new IllegalStateException("This entry has already been reversed");
 		}
-		return entries.save(original.reversal(reason, LocalDate.now(clock)));
+		return entries.save(original.reversal(reason));
 	}
 
 	public LedgerEntry get(Long id) {
@@ -72,6 +69,28 @@ public class LedgerService {
 			shares.put((Long) row[0], Money.orZero((BigDecimal) row[1]));
 		}
 		return shares;
+	}
+
+	/** Principal out on all loans: what was lent minus what has come back. */
+	public BigDecimal principalOutstanding() {
+		return Money.orZero(entries.sumByTypes(LedgerEntryType.loanBookTypes())).negate();
+	}
+
+	public BigDecimal principalOutstandingOn(LocalDate date) {
+		return Money.orZero(entries.sumByTypesUpTo(LedgerEntryType.loanBookTypes(), date)).negate();
+	}
+
+	public BigDecimal principalOutstandingFor(Long loanId) {
+		return Money.orZero(entries.sumByTypesForLoan(LedgerEntryType.loanBookTypes(), loanId)).negate();
+	}
+
+	public BigDecimal interestPaidFor(Long loanId) {
+		return Money.orZero(entries.sumByTypesForLoan(List.of(LedgerEntryType.LOAN_INTEREST_PAID), loanId));
+	}
+
+	/** The "total chama fund" used for loan caps and the goal: cash plus principal out on loan (decision P1). */
+	public BigDecimal poolTotal() {
+		return mmfBalance().add(principalOutstanding());
 	}
 
 	public BigDecimal mgrCollectedFor(YearMonth month) {

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Correct a repayment')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('loans')}"></header>
+<main class="page narrow">
+	<p class="eyebrow">Correct a repayment</p>
+	<h1 th:text="|${v.borrower.fullName}'s loan|">Name's loan</h1>
+
+	<p>This reverses the repayment in the ledger. The original and the reversal both stay in the history. Afterwards, record the correct repayment if there is one.</p>
+	<p class="hint">Only the most recent repayment can be corrected, so earlier ones keep their split between interest and principal.</p>
+
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<form th:action="@{/loans/{id}/repayments/{rid}/correct(id=${v.loan.id}, rid=${repaymentId})}" method="post" class="stack">
+		<label>Reason
+			<input type="text" name="reason" maxlength="500" required placeholder="e.g. Wrong amount typed">
+		</label>
+		<div class="actions">
+			<button type="submit" class="button primary">Reverse this repayment</button>
+			<a class="button" th:href="@{/loans/{id}(id=${v.loan.id})}">Cancel</a>
+		</div>
+	</form>
+</main>
+</body>
+</html>

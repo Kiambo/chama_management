@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Cancel loan')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('loans')}"></header>
+<main class="page narrow">
+	<p class="eyebrow">Cancel a loan entered by mistake</p>
+	<h1 th:text="|${@fmt.kes(v.loan.principal)} to ${v.borrower.fullName}|">KES 45,000 to Name</h1>
+
+	<p>This reverses the disbursement in the ledger and marks the loan cancelled. Nothing is deleted. Use it only for a loan that was entered by mistake; it isn't possible once repayments exist.</p>
+
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<form th:action="@{/loans/{id}/cancel(id=${v.loan.id})}" method="post" class="stack">
+		<label>Reason
+			<input type="text" name="reason" maxlength="500" required placeholder="e.g. Entered twice">
+		</label>
+		<div class="actions">
+			<button type="submit" class="button primary">Cancel this loan</button>
+			<a class="button" th:href="@{/loans/{id}(id=${v.loan.id})}">Keep it</a>
+		</div>
+	</form>
+</main>
+</body>
+</html>

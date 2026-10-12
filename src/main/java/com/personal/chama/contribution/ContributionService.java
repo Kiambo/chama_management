@@ -1,5 +1,6 @@
 package com.personal.chama.contribution;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.personal.chama.common.Money;
 import com.personal.chama.config.ChamaProperties;
 import com.personal.chama.ledger.LedgerEntry;
 import com.personal.chama.ledger.LedgerEntryRepository;
@@ -101,6 +103,18 @@ public class ContributionService {
 		return months.stream()
 				.map(m -> build(member, m, optOutByMonth.get(m), byMonth.getOrDefault(m, List.of())))
 				.toList();
+	}
+
+	/**
+	 * Contributions still owed for months whose due day has passed (Phase 3 plan, Q4).
+	 * Opted-out parts are not owed, so they never count.
+	 */
+	public BigDecimal overdueAmount(Long memberId) {
+		LocalDate today = today();
+		return history(memberId).stream()
+				.filter(h -> rules.dueDate(h.month()).isBefore(today))
+				.map(h -> h.owed().total())
+				.reduce(Money.ZERO, BigDecimal::add);
 	}
 
 	@Transactional

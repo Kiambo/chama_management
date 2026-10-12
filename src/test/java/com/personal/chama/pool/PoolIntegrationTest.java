@@ -124,9 +124,12 @@ class PoolIntegrationTest {
 		Member b = newMember();
 		BigDecimal poolBefore = ledger.mmfBalance();
 
-		// Shares can't exceed the statement balance (plus loans out).
+		// Loans out on the opening date (other tests may have entered some) count as group money.
+		BigDecimal loansOut = openingBalances.loansOutAtOpening();
+
+		// Shares can't exceed the statement balance plus loans out.
 		Map<Long, BigDecimal> tooMuch = new LinkedHashMap<>();
-		tooMuch.put(a.getId(), Money.of(100_000));
+		tooMuch.put(a.getId(), Money.of(50_001).add(loansOut));
 		assertThatThrownBy(() -> openingBalances.record(tooMuch, Money.of(50_000)))
 				.isInstanceOf(PoolException.class);
 
@@ -137,8 +140,9 @@ class PoolIntegrationTest {
 
 		assertThat(ledger.sharesOf(a.getId())).isEqualByComparingTo("34000");
 		assertThat(ledger.sharesOf(b.getId())).isEqualByComparingTo("30000");
-		// The pool grows by the whole statement balance: shares + 6,000 group money.
-		assertThat(ledger.mmfBalance().subtract(poolBefore)).isEqualByComparingTo("70000");
+		// Opening entries add shares + group money = statement balance + loans out. The loans'
+		// own disbursement entries already took that money out of cash, so cash = statement.
+		assertThat(ledger.mmfBalance().subtract(poolBefore)).isEqualByComparingTo(Money.of(70_000).add(loansOut));
 		assertThat(openingBalances.current()).extracting(e -> e.getType())
 				.contains(LedgerEntryType.OPENING_GROUP_FUNDS);
 

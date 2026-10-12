@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+	<div th:fragment="rows(loans)" class="loan-rows">
+	<a class="loan-row" th:each="v : ${loans}" th:href="@{/loans/{id}(id=${v.loan.id})}">
+		<div>
+			<strong th:text="${v.borrower.fullName}">Name</strong>
+			<div class="hint">
+				Disbursed <span th:text="${#temporals.format(v.loan.disbursedDate, 'd MMM yyyy')}">12 Jun</span>
+				· <span th:text="${v.loan.tenure.label}">6 months</span>
+				at <span th:text="|${v.loan.ratePercent.stripTrailingZeros().toPlainString()}% flat|">8% flat</span>
+				<span th:if="${v.nextDue() != null and v.loan.active}"
+					  th:text="| · next ${@fmt.amount(v.nextDue().owed())} due ${#temporals.format(v.nextDue().installment().dueDate, 'd MMM')}|"> · next due</span>
+			</div>
+		</div>
+		<div class="loan-row-end">
+			<span class="serif-amount" th:text="${@fmt.kes(v.loan.principal)}">KES 45,000</span>
+			<span th:if="${v.flag.name() != 'CLOSED'}" class="badge" th:classappend="'badge-' + ${v.flag.tone}" th:text="${v.flag.label}">On track</span>
+			<span th:if="${v.flag.name() == 'CLOSED'}" class="badge" th:text="${v.loan.status.label}">Repaid</span>
+		</div>
+	</a>
+</div>
+</body>
+</html>
