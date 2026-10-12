@@ -14,14 +14,18 @@
 <body>
 
 <header th:fragment="header(active)" class="site-header">
-	<a class="brand" th:href="@{/}">Family Chama</a>
-	<nav sec:authorize="isAuthenticated()">
-		<a th:href="@{/}" th:classappend="${active == 'dashboard'} ? 'current'">Dashboard</a>
-		<a th:href="@{/members}" th:classappend="${active == 'members'} ? 'current'">Members</a>
-		<form th:action="@{/logout}" method="post" class="inline">
-			<button type="submit" class="link-button">Log out</button>
-		</form>
-	</nav>
+	<div class="band-inner">
+		<a class="brand" th:href="@{/}">Family Chama</a>
+		<nav sec:authorize="isAuthenticated()">
+			<a th:href="@{/}" th:classappend="${active == 'dashboard'} ? 'current'"
+			   th:attr="aria-current=${active == 'dashboard'} ? 'page'">Dashboard</a>
+			<a th:href="@{/members}" th:classappend="${active == 'members'} ? 'current'"
+			   th:attr="aria-current=${active == 'members'} ? 'page'">Members</a>
+			<form th:action="@{/logout}" method="post" class="inline">
+				<button type="submit" class="link-button">Log out</button>
+			</form>
+		</nav>
+	</div>
 </header>
 
 <div th:fragment="flash" th:if="${message}" class="flash" th:text="${message}">Saved.</div>

@@ -2,16 +2,23 @@
    Brand: plum and blush. Status colours are separate and never reused for branding:
    green = paid / on track, amber = needs attention, red = missed / overdue. */
 :root {
-	--ink: #2a1f27;
-	--muted: #7d7179;
-	--line: #e6dbe0;
+	--ink: #2e1a28;
+	--muted: #6e5a67;
+	--line: #e6dbe0;        /* tables and form fields; needs to stay visible */
 	--paper: #ffffff;
-	--ground: #fbf7f8;
+	--card-border: #efe3e7;
+	--ground: #fbf7f8;      /* blush background, also blush-white text on plum */
 	--plum: #5b2a4e;
-	--plum-dark: #46203c;
-	--rose: #c77d8e;       /* borders, highlights - too light for small text */
-	--rose-ink: #a4506a;   /* rose for text */
+	--plum-hover: #76406a;  /* hover, and dividers on the plum band */
+	--rose: #c77d8e;        /* borders, highlights - fails contrast as text on light grounds */
+	--rose-ink: #8e4458;    /* rose for text on light grounds */
+	--rose-tint: #f6e3e8;   /* badge background */
+	--rose-tint-ink: #8a3f52;
 	--blush: #f6e9ed;
+	/* Text on the plum band */
+	--on-plum: var(--ground);
+	--on-plum-accent: #e2a9b7;
+	--on-plum-muted: #e2ccd9;
 	--amber: #a8742a;
 	--amber-bg: #fdf1e0;
 	--green: #4f6b3f;
@@ -29,7 +36,6 @@ body {
 	background: var(--ground);
 	color: var(--ink);
 	font: 15px/1.5 var(--sans);
-	border-top: 4px solid var(--plum);
 }
 
 h1, h2, h3, .brand { font-family: var(--serif); font-weight: 500; color: var(--plum); }
@@ -37,21 +43,37 @@ h1 { font-size: 2.2rem; margin: 0.2rem 0 0.4rem; }
 
 a { color: var(--plum); }
 
-.site-header {
+/* Plum band: the site header on every page, plus the greeting on the dashboard. */
+.site-header, .hero { background: var(--plum); color: var(--on-plum); }
+.band-inner { max-width: 840px; margin: 0 auto; padding: 0 1rem; }
+
+.site-header .band-inner {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 1rem;
 	justify-content: space-between;
 	align-items: center;
-	max-width: 840px;
-	margin: 0 auto;
-	padding: 1.5rem 1rem 1rem;
-	border-bottom: 1px solid var(--line);
+	padding-block: 1.1rem;
 }
-.brand { font-size: 1.45rem; font-weight: 600; text-decoration: none; }
-.site-header nav { display: flex; gap: 1.25rem; align-items: center; }
-.site-header nav a { color: var(--muted); text-decoration: none; }
-.site-header nav a.current { color: var(--plum); box-shadow: inset 0 -2px 0 var(--rose); }
+.brand { font-size: 1.5rem; font-weight: 600; color: var(--on-plum); text-decoration: none; }
+.site-header nav { display: flex; flex-wrap: wrap; gap: 1.4rem; align-items: center; }
+.site-header nav a,
+.site-header .link-button {
+	color: var(--on-plum);
+	opacity: 0.75;
+	text-decoration: none;
+	padding-block: 0.2rem;
+}
+.site-header nav a:hover,
+.site-header .link-button:hover { opacity: 1; }
+.site-header nav a.current { opacity: 1; box-shadow: inset 0 -2px 0 var(--rose); }
+.site-header a:focus-visible,
+.site-header button:focus-visible { outline: 2px solid var(--on-plum-accent); outline-offset: 3px; opacity: 1; }
+
+.hero .band-inner { padding-block: 1.75rem 2.25rem; border-top: 1px solid var(--plum-hover); }
+.hero .eyebrow { color: var(--on-plum-accent); }
+.hero h1 { font-size: 2.5rem; font-weight: 600; line-height: 1.15; color: var(--on-plum); margin: 0.35rem 0 0.4rem; }
+.hero .lede { color: var(--on-plum-muted); margin: 0; }
 
 .page { max-width: 840px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
 .page.narrow { max-width: 520px; }
@@ -69,11 +91,44 @@ a { color: var(--plum); }
 
 .card {
 	background: var(--paper);
-	border: 1px solid var(--line);
-	border-radius: 6px;
+	border: 1px solid var(--card-border);
+	border-radius: 10px;
 	padding: 1.25rem 1.4rem;
 	margin: 1.25rem 0;
 }
+
+/* Stat tiles */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 0.5rem 0 1.25rem; }
+.stat-grid .card { margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.stat-label { margin: 0; color: var(--muted); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.stat-value { margin: 0; font-family: var(--serif); font-size: 2.6rem; font-weight: 600; line-height: 1; color: var(--plum); }
+@media (max-width: 640px) {
+	.stat-grid { grid-template-columns: 1fr; }
+}
+
+.pill {
+	align-self: flex-start;
+	display: inline-block;
+	padding: 0.2rem 0.75rem;
+	border-radius: 999px;
+	background: var(--rose-tint);
+	color: var(--rose-tint-ink);
+	font-size: 0.8rem;
+}
+
+/* A card with a single-sided rose accent, so no rounded corners. */
+.card.notice {
+	border-left: 4px solid var(--rose);
+	border-radius: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem 1.5rem;
+	align-items: center;
+	justify-content: space-between;
+}
+.notice-body { flex: 1 1 22rem; }
+.notice-title { margin: 0 0 0.25rem; font-size: 1.35rem; font-weight: 600; }
+.notice-body p { margin: 0; }
 
 .button, button.button {
 	display: inline-block;
@@ -87,8 +142,15 @@ a { color: var(--plum); }
 	cursor: pointer;
 }
 .button:hover { background: var(--blush); }
-.button.primary { background: var(--plum); border-color: var(--plum); color: #fff; }
-.button.primary:hover { background: var(--plum-dark); }
+.button.primary {
+	background: var(--plum);
+	border-color: var(--plum);
+	border-radius: 8px;
+	color: var(--on-plum);
+	font: 600 0.95rem var(--sans);
+}
+.button.primary:hover { background: var(--plum-hover); border-color: var(--plum-hover); }
+.button:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
 
 .link-button {
 	background: none;
@@ -98,7 +160,6 @@ a { color: var(--plum); }
 	font: inherit;
 	cursor: pointer;
 }
-.site-header .link-button { color: var(--muted); }
 
 form.inline { display: inline; }
 
