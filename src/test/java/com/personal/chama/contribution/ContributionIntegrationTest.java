@@ -229,7 +229,9 @@ class ContributionIntegrationTest {
 
 	@Test
 	void pagesRender() throws Exception {
-		contributions.record(form(3500));
+		Contribution saved = contributions.record(form(3500));
+		mvc.perform(get("/contributions/{id}/correct", saved.getId())).andExpect(status().isOk())
+				.andExpect(content().string(Matchers.containsString(member.getFullName())));
 		mvc.perform(get("/contributions").param("month", "2026-10")).andExpect(status().isOk())
 				.andExpect(content().string(Matchers.containsString(member.getFullName())));
 		mvc.perform(get("/contributions/new").param("memberId", member.getId().toString()).param("month", "2026-10"))

@@ -62,11 +62,13 @@
 							<button type="submit" class="link-button">Record earlier payout</button>
 						</form>
 						<th:block th:each="p : ${s.payouts}">
-							<form th:if="${p.id == latestPayoutId}" class="inline-form"
-								  th:action="@{/mgr/payouts/{id}/correct(id=${p.id})}" method="post">
-								<input type="text" name="reason" placeholder="Reason to correct" maxlength="500" required>
-								<button type="submit" class="link-button">Correct</button>
-							</form>
+							<details th:if="${p.id == latestPayoutId}" class="correct-inline">
+								<summary>Correct</summary>
+								<form th:action="@{/mgr/payouts/{id}/correct(id=${p.id})}" method="post">
+									<input type="text" name="reason" placeholder="Why it's being corrected" maxlength="500" required>
+									<button type="submit" class="link-button">Reverse payout</button>
+								</form>
+							</details>
 						</th:block>
 						<a th:if="${s.status.name() == 'PAID' and !s.month.isBefore(cutover)}" th:href="@{/mgr/slots/{id}/payout(id=${s.slot.id})}">Top up</a>
 					</td>

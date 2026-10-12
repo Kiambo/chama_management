@@ -71,7 +71,7 @@ a { color: var(--plum); }
 .site-header a:focus-visible,
 .site-header button:focus-visible { outline: 2px solid var(--on-plum-accent); outline-offset: 3px; opacity: 1; }
 
-.hero .band-inner { padding-block: 1.75rem 2.25rem; border-top: 1px solid var(--plum-hover); }
+.hero .band-inner { padding-block: 1.75rem 2.25rem; border-top: 1px solid var(--plum-hover); text-align: center; }
 .hero .eyebrow { color: var(--on-plum-accent); }
 .hero h1 { font-size: 2.5rem; font-weight: 600; line-height: 1.15; color: var(--on-plum); margin: 0.35rem 0 0.4rem; }
 .hero .lede { color: var(--on-plum-muted); margin: 0; }
@@ -350,3 +350,10 @@ details.exception summary { cursor: pointer; color: var(--plum); font-size: 0.9r
 details.exception[open] { display: flex; flex-direction: column; gap: 0.75rem; }
 .rotation-end { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end; }
 .rotation-end .rotation-amount { margin-left: 0; }
+
+/* "Correct" opens the reason box only when clicked. */
+details.correct-inline { display: inline-block; }
+details.correct-inline summary { cursor: pointer; color: var(--plum); list-style: none; }
+details.correct-inline summary::-webkit-details-marker { display: none; }
+details.correct-inline[open] summary { color: var(--muted); }
+details.correct-inline form { display: flex; gap: 0.4rem; margin-top: 0.35rem; }

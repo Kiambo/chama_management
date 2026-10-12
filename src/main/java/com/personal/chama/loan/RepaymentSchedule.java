@@ -29,6 +29,8 @@ public final class RepaymentSchedule {
 	private final List<Line> lines = new ArrayList<>();
 	private final List<LateFee> fees;
 	private final Set<Long> appliedFees = new HashSet<>();
+	/** The date of the payment being applied, so each installment knows when it was paid off. */
+	private LocalDate currentDate;
 
 	private RepaymentSchedule(List<Installment> installments, List<LateFee> fees) {
 		this.fees = fees;
@@ -59,6 +61,7 @@ public final class RepaymentSchedule {
 				break;
 			}
 			schedule.chargeFeesUpTo(e.date());
+			schedule.currentDate = e.date();
 			if (e.repayment() != null) {
 				schedule.allocate(e.repayment().getAmount());
 			} else {
@@ -79,6 +82,7 @@ public final class RepaymentSchedule {
 	/** Applies a new payment made on {@code date} and says how it splits. */
 	public Allocation apply(BigDecimal amount, LocalDate date) {
 		chargeFeesUpTo(date);
+		currentDate = date;
 		return allocate(amount);
 	}
 
@@ -109,6 +113,9 @@ public final class RepaymentSchedule {
 			BigDecimal principal = left.min(line.principalOwed());
 			line.principalPaid = line.principalPaid.add(principal);
 			left = left.subtract(principal);
+			if (line.isPaid() && line.paidOn == null) {
+				line.paidOn = currentDate;
+			}
 			toFee = toFee.add(fee);
 			toInterest = toInterest.add(interest);
 			toPrincipal = toPrincipal.add(principal);
@@ -198,6 +205,7 @@ public final class RepaymentSchedule {
 		private BigDecimal feePaid = Money.ZERO;
 		private BigDecimal interestPaid = Money.ZERO;
 		private BigDecimal principalPaid = Money.ZERO;
+		private LocalDate paidOn;
 
 		private Line(Installment installment, boolean active) {
 			this.installment = installment;
@@ -206,6 +214,11 @@ public final class RepaymentSchedule {
 
 		public Installment installment() {
 			return installment;
+		}
+
+		/** When the installment was paid off: the date of the payment that cleared it, if known. */
+		public LocalDate paidOn() {
+			return isPaid() ? paidOn : null;
 		}
 
 		public boolean isActive() {

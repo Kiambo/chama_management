@@ -155,6 +155,11 @@ class LatePaymentIntegrationTest {
 		// Fees on installments 1 and 3; the one briefly charged on 2 was cancelled.
 		assertThat(v.fees()).extracting(f -> v.installmentOf(f).getNumber()).containsExactlyInAnyOrder(1, 3);
 		assertThat(v.flag()).isEqualTo(LoanFlag.OVERDUE);
+		// "Paid on" is the date of the payment that cleared each installment, not its due date.
+		List<RepaymentSchedule.Line> after = v.schedule().activeLines();
+		assertThat(after.get(0).paidOn()).isEqualTo(secondDue);
+		assertThat(after.get(1).paidOn()).isEqualTo(secondDue);
+		assertThat(after.get(2).paidOn()).isNull();
 	}
 
 	@Test

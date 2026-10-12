@@ -85,7 +85,7 @@
 	<h2>Schedule</h2>
 	<div class="table-wrap">
 		<table>
-			<thead><tr><th>#</th><th>Due</th><th class="num">Amount</th><th class="num">Late fee</th><th class="num">Paid</th><th class="num">Owed</th><th></th></tr></thead>
+			<thead><tr><th>#</th><th>Due</th><th class="num">Amount</th><th class="num">Late fee</th><th class="num">Paid</th><th class="num">Owed</th><th>Status</th><th>Paid on</th></tr></thead>
 			<tbody>
 			<tr th:each="line : ${v.schedule.lines()}" th:with="st=${v.statusOf(line)}" th:classappend="${!line.active} ? 'inactive'">
 				<td th:text="${line.installment().number}">1</td>
@@ -100,6 +100,7 @@
 					<span th:if="${st == 'In grace'}" class="badge badge-amber">In grace</span>
 					<span th:if="${st == 'Replaced'}" class="badge">Replaced</span>
 				</td>
+				<td class="nowrap" th:text="${line.paidOn() != null} ? ${#temporals.format(line.paidOn(), 'd MMM yyyy')} : ''"></td>
 			</tr>
 			</tbody>
 		</table>
@@ -162,11 +163,13 @@
 				<li th:each="p : ${d.payments}" th:classappend="${p.voided} ? 'inactive'">
 					<span th:text="|${#temporals.format(p.paidDate, 'd MMM yyyy')}: ${@fmt.amount(p.amount)} by ${p.method}|">paid</span>
 					<span class="hint" th:if="${p.voided}" th:text="| · reversed: ${p.voidReason}|"></span>
-					<form sec:authorize="hasRole('RECORDER')" th:if="${p.id == d.correctablePaymentId()}" class="inline-form"
-						  th:action="@{/loans/{id}/debts/{did}/payments/{pid}/correct(id=${loan.id}, did=${d.debt.id}, pid=${p.id})}" method="post">
-						<input type="text" name="reason" placeholder="Reason to correct" maxlength="500" required>
-						<button type="submit" class="link-button">Correct</button>
-					</form>
+					<details sec:authorize="hasRole('RECORDER')" th:if="${p.id == d.correctablePaymentId()}" class="correct-inline">
+						<summary>Correct</summary>
+						<form th:action="@{/loans/{id}/debts/{did}/payments/{pid}/correct(id=${loan.id}, did=${d.debt.id}, pid=${p.id})}" method="post">
+							<input type="text" name="reason" placeholder="Why it's being corrected" maxlength="500" required>
+							<button type="submit" class="link-button">Reverse</button>
+						</form>
+					</details>
 				</li>
 			</ul>
 			<form sec:authorize="hasRole('RECORDER')" th:if="${d.owed.signum() > 0}" class="stack"

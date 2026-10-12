@@ -81,7 +81,6 @@
 						<td class="num muted" th:text="${@fmt.amount(c.mgrPortion)}">1,500</td>
 						<td>
 							<span th:text="${c.method}">M-Pesa</span>
-							<span class="hint" th:if="${c.reference}" th:text="| · ${c.reference}|"> · ref</span>
 						</td>
 						<td sec:authorize="hasRole('RECORDER')" class="row-actions">
 							<a th:href="@{/contributions/{id}/correct(id=${c.id})}">Correct</a>

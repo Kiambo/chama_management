@@ -238,7 +238,7 @@ public class ContributionService {
 	}
 
 	public Contribution get(Long id) {
-		return contributions.findById(id).orElseThrow(() -> new ContributionException("No such contribution."));
+		return contributions.findWithMemberById(id).orElseThrow(() -> new ContributionException("No such contribution."));
 	}
 
 	private MemberMonth build(Member member, YearMonth month, ContributionOptOut optOut, List<Contribution> payments) {
