@@ -303,3 +303,17 @@ input[type="file"] { padding: 0.5rem; }
 	.page { padding: 0; max-width: none; }
 	.card { border: 0; padding: 0; }
 }
+
+/* Breadcrumbs: where you are, and how you got here */
+.crumbs {
+	display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem;
+	margin: 0 0 1.25rem; font-size: 0.85rem; color: var(--muted);
+}
+.crumbs a { color: var(--plum); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.crumbs > :not(:first-child):not(.back)::before { content: "›"; margin-right: 0.5rem; color: var(--rose); }
+.crumbs [aria-current] { color: var(--ink); }
+.crumbs .back { margin-left: auto; padding: 0.15rem 0.7rem; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); }
+.crumbs .back:hover { background: var(--blush); text-decoration: none; }
+
+.method-picker { display: flex; flex-direction: column; gap: 0.5rem; }

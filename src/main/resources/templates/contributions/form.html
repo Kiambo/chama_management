@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('contributions')}"></header>
 <main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/contributions(month=${form.month})}">Contributions</a>
+		<span aria-current="page">Record a contribution</span>
+	</nav>
 	<p class="eyebrow">Contributions</p>
 	<h1>Record a contribution</h1>
 	<p class="muted">Savings are filled first, then the MGR pool.</p>
@@ -66,10 +71,7 @@
 				<span class="field-error" th:if="${#fields.hasErrors('paidDate')}" th:errors="*{paidDate}">Error</span>
 			</label>
 			<label>Method
-				<input type="text" th:field="*{method}" list="methods" maxlength="50">
-				<datalist id="methods">
-					<option th:each="m : ${methods}" th:value="${m}"></option>
-				</datalist>
+				<div th:replace="~{fragments/layout :: methodPicker(${form.method}, ${methods})}"></div>
 				<span class="field-error" th:if="${#fields.hasErrors('method')}" th:errors="*{method}">Error</span>
 			</label>
 		</div>

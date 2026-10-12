@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('members')}"></header>
 <main class="page">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/members}">Members</a>
+		<span aria-current="page" th:text="${member.fullName}">x</span>
+	</nav>
 	<div class="title-row">
 		<div class="member-head">
 			<span class="avatar" th:text="${member.initials}">NM</span>

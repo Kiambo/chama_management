@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('pool')}"></header>
 <main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/fund-earnings}">Fund earnings</a>
+		<span aria-current="page">Correct</span>
+	</nav>
 	<p class="eyebrow">Correct fund earnings</p>
 	<h1 th:text="|${@fmt.kes(earning.amount)} for ${@fmt.month(earning.month)}|">KES 1,850 for September 2026</h1>
 

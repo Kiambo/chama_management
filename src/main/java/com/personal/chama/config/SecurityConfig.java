@@ -15,7 +15,7 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/login", "/css/**", "/favicon.ico", "/error").permitAll()
+						.requestMatchers("/login", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
 						// Reading is open to any logged-in user; changing data needs the recorder.
 						.requestMatchers(HttpMethod.GET, "/**").authenticated()
 						.anyRequest().hasRole("RECORDER"))

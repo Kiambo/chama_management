@@ -30,7 +30,7 @@ import jakarta.validation.Valid;
 @RequestMapping("/loans")
 public class LoanController {
 
-	static final List<String> PAYMENT_METHODS = List.of("M-Pesa", "Bank transfer", "PayPal", "Cash");
+	static final List<String> PAYMENT_METHODS = List.of("M-Pesa", "PayPal", "Bank deposit", "Bank transfer", "Cash");
 
 	private final LoanService loanService;
 	private final MemberService memberService;
@@ -65,7 +65,6 @@ public class LoanController {
 		form.setBorrowerId(borrowerId);
 		form.setKind(kind);
 		form.setDisbursedDate(loanService.today());
-		form.setMethod(PAYMENT_METHODS.get(0));
 		return showForm(form, model);
 	}
 
@@ -175,6 +174,7 @@ public class LoanController {
 			model.addAttribute("error", e.getMessage());
 			model.addAttribute("v", loanService.view(id));
 			model.addAttribute("methods", PAYMENT_METHODS);
+			model.addAttribute("method", method);
 			model.addAttribute("today", loanService.today());
 			return "loans/show";
 		}

@@ -28,7 +28,7 @@ import jakarta.validation.Valid;
 public class ContributionController {
 
 	/** Suggestions only; any other method can be typed in (Phase 2 plan, Q5). */
-	static final List<String> PAYMENT_METHODS = List.of("M-Pesa", "PayPal", "Bank deposit", "Cash");
+	static final List<String> PAYMENT_METHODS = List.of("M-Pesa", "PayPal", "Bank deposit", "Bank transfer", "Cash");
 
 	private final ContributionService contributionService;
 	private final MemberService memberService;
@@ -60,7 +60,6 @@ public class ContributionController {
 		form.setMemberId(memberId);
 		form.setMonth(month != null ? month : contributionService.currentMonth());
 		form.setPaidDate(contributionService.today());
-		form.setMethod(PAYMENT_METHODS.get(0));
 		if (memberId != null) {
 			form.setAmount(contributionService.memberMonth(memberId, form.getMonth()).owed().total());
 		}

@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('loans')}"></header>
 <main class="page" th:with="loan=${v.loan}">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/loans}">Loans</a>
+		<span aria-current="page" th:text="|${v.borrower.fullName}'s loan|">x</span>
+	</nav>
 	<div class="title-row">
 		<div>
 			<p class="eyebrow" th:text="${loan.kind.label}">New loan</p>
@@ -87,8 +92,7 @@
 					<input type="date" name="paidDate" th:value="${today}" required>
 				</label>
 				<label>Method
-					<input type="text" name="method" list="methods" value="M-Pesa" maxlength="50" required>
-					<datalist id="methods"><option th:each="m : ${methods}" th:value="${m}"></option></datalist>
+					<div th:replace="~{fragments/layout :: methodPicker(${method}, ${methods})}"></div>
 				</label>
 				<label>Reference
 					<input type="text" name="reference" maxlength="100">

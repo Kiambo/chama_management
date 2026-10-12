@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('contributions')}"></header>
 <main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/contributions(month=${contribution.month})}">Contributions</a>
+		<span aria-current="page">Correct a payment</span>
+	</nav>
 	<p class="eyebrow">Correct a payment</p>
 	<h1 th:text="|${contribution.member.fullName}, ${@fmt.month(contribution.month)}|">Name, October 2026</h1>
 

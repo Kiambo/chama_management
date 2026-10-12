@@ -4,10 +4,15 @@
 <body>
 <header th:replace="~{fragments/layout :: header('loans')}"></header>
 <main class="page narrow agreement" th:with="loan=${v.loan}">
+	<nav class="crumbs no-print" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/loans}">Loans</a>
+		<a th:href="@{/loans/{id}(id=${v.loan.id})}" th:text="|${v.borrower.fullName}'s loan|">Loan</a>
+		<span aria-current="page">Agreement</span>
+	</nav>
 	<div class="no-print">
 		<div th:replace="~{fragments/layout :: flash}"></div>
 		<div th:replace="~{fragments/layout :: error}"></div>
-		<p><a th:href="@{/loans/{id}(id=${loan.id})}">← Back to the loan</a></p>
 	</div>
 
 	<p class="eyebrow">Family Chama · loan agreement</p>

@@ -4,6 +4,10 @@
 <body>
 <header th:replace="~{fragments/layout :: header('members')}"></header>
 <main class="page">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<span aria-current="page">Members</span>
+	</nav>
 	<div class="title-row">
 		<h1>Members</h1>
 		<a sec:authorize="hasRole('RECORDER')" class="button primary" th:href="@{/members/new}">Add member</a>

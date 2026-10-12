@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('members')}"></header>
 <main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/members}">Members</a>
+		<span aria-current="page" th:text="${member} != null ? |Edit ${member.fullName}| : 'Add a member'">x</span>
+	</nav>
 	<p class="eyebrow">Members</p>
 	<h1 th:text="${member} != null ? 'Edit ' + ${member.fullName} : 'Add a member'">Add a member</h1>
 

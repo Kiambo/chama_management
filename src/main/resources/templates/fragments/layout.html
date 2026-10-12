@@ -9,6 +9,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
 	<link rel="stylesheet" th:href="@{/css/app.css}">
+	<script th:src="@{/js/app.js}" defer></script>
 </head>
 
 <body>
@@ -39,6 +40,18 @@
 <div th:fragment="flash" th:if="${message}" class="flash" th:text="${message}">Saved.</div>
 
 <div th:fragment="error" th:if="${error}" class="alert alert-red" th:text="${error}">Something went wrong.</div>
+
+<!--/* Payment method: a real dropdown plus "Other…" for anything else (see app.js).
+     The select is named directly so the form still works if the script doesn't load. */-->
+<div th:fragment="methodPicker(value, methods)" class="method-picker" data-method-picker>
+	<select name="method" data-name="method" required>
+		<option value="">Choose…</option>
+		<option th:each="m : ${methods}" th:value="${m}" th:text="${m}" th:selected="${m == value}">M-Pesa</option>
+		<option value="__other" th:selected="${value != null and value != '' and !methods.contains(value)}">Other…</option>
+	</select>
+	<input type="text" maxlength="50" placeholder="How was it paid?" hidden
+		   th:value="${value != null and !methods.contains(value)} ? ${value}">
+</div>
 
 <span th:fragment="status(s)" th:if="${s.label != ''}" class="badge"
 	  th:classappend="'badge-' + ${s.tone}" th:text="${s.label}">Paid</span>

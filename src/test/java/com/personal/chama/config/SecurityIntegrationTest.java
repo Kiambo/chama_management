@@ -32,6 +32,7 @@ class SecurityIntegrationTest {
 	void loginPageAndStylesheetArePublic() throws Exception {
 		mvc.perform(get("/login")).andExpect(status().isOk());
 		mvc.perform(get("/css/app.css")).andExpect(status().isOk());
+		mvc.perform(get("/js/app.js")).andExpect(status().isOk());
 	}
 
 	@Test

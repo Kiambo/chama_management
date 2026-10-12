@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('pool')}"></header>
 <main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/fund-earnings}">Fund earnings</a>
+		<span aria-current="page">Opening balances</span>
+	</nav>
 	<p class="eyebrow">MMF pool</p>
 	<h1>Opening balances</h1>
 	<p class="muted" th:text="|Balances on ${#temporals.format(openingDate, 'd MMMM yyyy')}, the day before the app takes over.|">Balances on 30 September 2026.</p>

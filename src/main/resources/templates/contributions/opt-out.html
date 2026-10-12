@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('contributions')}"></header>
 <main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/contributions(month=${row.month})}">Contributions</a>
+		<span aria-current="page" th:text="|Opt-out for ${row.member.fullName}|">x</span>
+	</nav>
 	<p class="eyebrow" th:text="${@fmt.month(row.month)}">October 2026</p>
 	<h1 th:text="|Opt-out for ${row.member.fullName}|">Opt-out</h1>
 	<p class="muted">Opting out is chosen month by month. An opted-out part is not owed and doesn't count as missed.</p>

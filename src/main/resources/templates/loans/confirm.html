@@ -4,6 +4,11 @@
 <body>
 <header th:replace="~{fragments/layout :: header('loans')}"></header>
 <main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/loans}">Loans</a>
+		<span aria-current="page">Confirm</span>
+	</nav>
 	<p class="eyebrow" th:text="${form.kind.label}">New loan</p>
 	<h1 th:text="|${@fmt.kes(form.amount)} to ${assessment.borrower.fullName}|">KES 45,000 to Name</h1>
 

@@ -4,6 +4,12 @@
 <body>
 <header th:replace="~{fragments/layout :: header('loans')}"></header>
 <main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/loans}">Loans</a>
+		<a th:href="@{/loans/{id}(id=${v.loan.id})}" th:text="|${v.borrower.fullName}'s loan|">Loan</a>
+		<span aria-current="page">Correct a repayment</span>
+	</nav>
 	<p class="eyebrow">Correct a repayment</p>
 	<h1 th:text="|${v.borrower.fullName}'s loan|">Name's loan</h1>
 

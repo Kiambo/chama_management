@@ -300,6 +300,27 @@ class LoanIntegrationTest {
 	}
 
 	@Test
+	void repaymentWithAnOtherMethodIsKept() throws Exception {
+		Member borrower = memberWithShares(10_000);
+		Loan loan = loans.disburse(form(borrower, 5_000, Tenure.ONE_MONTH));
+		mvc.perform(post("/loans/{id}/repayments", loan.getId()).with(csrf())
+				.param("amount", "1000").param("paidDate", LocalDate.now().toString()).param("method", "Equity Bank cheque"))
+				.andExpect(redirectedUrlPattern("/loans/*"));
+		assertThat(loans.view(loan.getId()).repayments()).singleElement()
+				.satisfies(r -> assertThat(r.getMethod()).isEqualTo("Equity Bank cheque"));
+	}
+
+	@Test
+	void repaymentWithoutAMethodIsRefused() throws Exception {
+		Member borrower = memberWithShares(10_000);
+		Loan loan = loans.disburse(form(borrower, 5_000, Tenure.ONE_MONTH));
+		mvc.perform(post("/loans/{id}/repayments", loan.getId()).with(csrf())
+				.param("amount", "1000").param("paidDate", LocalDate.now().toString()).param("method", ""))
+				.andExpect(status().isOk())
+				.andExpect(content().string(Matchers.containsString("Enter how it was paid")));
+	}
+
+	@Test
 	void pagesRender() throws Exception {
 		Member borrower = memberWithShares(10_000);
 		Member g = memberWithShares(30_000);
@@ -320,7 +341,11 @@ class LoanIntegrationTest {
 
 		Loan loan = loans.forBorrower(borrower.getId()).get(0).loan();
 		mvc.perform(get("/loans")).andExpect(status().isOk());
-		mvc.perform(get("/loans/{id}", loan.getId())).andExpect(status().isOk());
+		// Breadcrumbs show the way back, and the payment method is a real dropdown with no preset value.
+		mvc.perform(get("/loans/{id}", loan.getId())).andExpect(status().isOk())
+				.andExpect(content().string(Matchers.containsString("class=\"crumbs\"")))
+				.andExpect(content().string(Matchers.containsString("<select name=\"method\"")))
+				.andExpect(content().string(Matchers.not(Matchers.containsString("value=\"M-Pesa\" selected"))));
 		mvc.perform(get("/loans/{id}/agreement", loan.getId())).andExpect(status().isOk())
 				.andExpect(content().string(Matchers.containsString(g.getFullName())));
 		mvc.perform(get("/members/{id}", borrower.getId())).andExpect(status().isOk());
