@@ -18,7 +18,7 @@ class HomeControllerTest {
 
 	@Test
 	void namesAreCapitalisedForDisplay() {
-		assertThat(HomeController.capitalizeWords("lilian")).isEqualTo("Lilian");
+		assertThat(HomeController.capitalizeWords("grace")).isEqualTo("Grace");
 		assertThat(HomeController.capitalizeWords("mary anne")).isEqualTo("Mary Anne");
 		assertThat(HomeController.capitalizeWords("mary-anne")).isEqualTo("Mary-Anne");
 		assertThat(HomeController.capitalizeWords("McDonald")).isEqualTo("McDonald");
