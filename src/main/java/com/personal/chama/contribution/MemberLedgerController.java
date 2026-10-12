@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import com.personal.chama.ledger.LedgerService;
+import com.personal.chama.loan.LoanEvent;
 import com.personal.chama.loan.LoanService;
 import com.personal.chama.member.MemberService;
 
@@ -37,9 +38,14 @@ public class MemberLedgerController {
 		model.addAttribute("paymentCount", history.stream().mapToInt(h -> h.payments().size()).sum());
 		List<LoanService.LoanView> loans = loanService.forBorrower(id);
 		model.addAttribute("activeLoan", loans.stream().filter(v -> v.loan().isActive()).findFirst().orElse(null));
-		model.addAttribute("loans", loans);
+		model.addAttribute("loanHistories", loans.stream()
+				.map(v -> new LoanHistoryCard(v, loanService.timeline(v))).toList());
 		model.addAttribute("guaranteeing", loanService.guaranteedBy(id));
 		model.addAttribute("debts", loanService.debtsInvolving(id));
 		return "members/show";
+	}
+
+	/** A loan the member took, with everything that happened to it. */
+	public record LoanHistoryCard(LoanService.LoanView view, List<LoanEvent> events) {
 	}
 }

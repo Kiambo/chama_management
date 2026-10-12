@@ -85,6 +85,40 @@
 			</tbody>
 		</table>
 	</div>
+
+	<h2>Loan history</h2>
+	<p th:if="${loanHistories.isEmpty()}" class="muted">No loans.</p>
+	<section class="card loan-history" th:each="h : ${loanHistories}" th:with="v=${h.view}">
+		<div class="card-head">
+			<div>
+				<a th:href="@{/loans/{id}(id=${v.loan.id})}"><strong th:text="${@fmt.kes(v.loan.principal)}">KES 15,000</strong></a>
+				<span class="hint" th:text="|${v.loan.tenure.label} at ${v.loan.ratePercent.stripTrailingZeros().toPlainString()}% flat · from ${#temporals.format(v.loan.disbursedDate, 'd MMM yyyy')}|">3 months</span>
+				<div class="hint" th:if="${!v.guarantors.isEmpty()}"
+					 th:text="|Guaranteed by ${#strings.listJoin(v.guarantors.![fullName], ', ')}|">Guaranteed by</div>
+			</div>
+			<div class="loan-row-end">
+				<span th:if="${v.loan.active}" class="muted" th:text="|${@fmt.amount(v.remaining())} still owed|">owed</span>
+				<span th:if="${v.flag.name() != 'CLOSED'}" class="badge" th:classappend="'badge-' + ${v.flag.tone}" th:text="${v.flag.label}">On track</span>
+				<span class="badge" th:classappend="${v.loan.status.name() == 'REPAID'} ? 'badge-green' : (${v.loan.status.name() == 'DEFAULTED' or v.loan.status.name() == 'WRITTEN_OFF'} ? 'badge-red')"
+					  th:text="${v.loan.status.label}">Active</span>
+			</div>
+		</div>
+		<div class="table-wrap">
+			<table>
+				<tbody>
+				<tr th:each="e : ${h.events}" th:classappend="${e.reversed} ? 'inactive'">
+					<td class="nowrap" th:text="${#temporals.format(e.date, 'd MMM yyyy')}">12 Jul 2026</td>
+					<td>
+						<span class="event-dot" th:classappend="'dot-' + ${e.tone}"></span>
+						<span th:text="${e.label}">Repayment</span>
+						<div class="hint" th:if="${e.detail != null and !e.detail.isEmpty()}" th:text="${e.detail}">detail</div>
+					</td>
+					<td class="num"><span th:if="${e.amount != null}" th:text="${@fmt.amount(e.amount)}" th:classappend="${e.reversed} ? 'struck'">5,250</span></td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
 </main>
 </body>
 </html>

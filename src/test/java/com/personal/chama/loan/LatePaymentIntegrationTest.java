@@ -175,6 +175,23 @@ class LatePaymentIntegrationTest {
 		assertThat(v.loan().getStatus()).isEqualTo(LoanStatus.REPAID);
 		assertThat(v.interestPaid()).isEqualByComparingTo("150");
 		assertThat(v.debts()).isEmpty();
+
+		// The borrower's page shows the whole story, oldest first.
+		assertThat(loans.timeline(v)).extracting(LoanEvent::label)
+				.containsExactly("Disbursed", "Late fee charged", "Recovered from own shares", "Repaid in full");
+	}
+
+	@Test
+	void memberPageShowsTheirLoanHistory() throws Exception {
+		Member borrower = member(10_000);
+		Loan loan = loan(borrower, 5_000, Tenure.ONE_MONTH, today().minusMonths(2).minusDays(10));
+		recovery.recover(loan.getId());
+
+		mvc.perform(get("/members/{id}", borrower.getId())).andExpect(status().isOk())
+				.andExpect(content().string(Matchers.containsString("Loan history")))
+				.andExpect(content().string(Matchers.containsString("Recovered from own shares")))
+				.andExpect(content().string(Matchers.containsString("Late fee charged")))
+				.andExpect(content().string(Matchers.containsString("Repaid in full")));
 	}
 
 	@Test

@@ -457,6 +457,57 @@ public class LoanService {
 		return new DebtView(debt, repaid, debt.getAmount().subtract(repaid), payments);
 	}
 
+	/** Everything that happened to a loan, oldest first, for the borrower's page. */
+	public List<LoanEvent> timeline(LoanView v) {
+		Loan loan = v.loan();
+		List<LoanEvent> events = new java.util.ArrayList<>();
+		events.add(new LoanEvent(loan.getDisbursedDate(), "Disbursed", loan.getPrincipal(),
+				loan.getTenure().getLabel() + " at " + loan.getRatePercent().stripTrailingZeros().toPlainString()
+						+ "% flat" + (loan.getDisbursementMethod() != null ? " · by " + loan.getDisbursementMethod() : ""),
+				"grey", false));
+		Map<Long, String> guarantorNames = new HashMap<>();
+		v.guarantors().forEach(g -> guarantorNames.put(g.getId(), g.getFullName()));
+		for (Repayment r : v.repayments()) {
+			String label = switch (r.getSource()) {
+				case BORROWER -> "Repayment";
+				case BORROWER_SHARES -> "Recovered from own shares";
+				case GUARANTOR_SHARES -> "Recovered from " + guarantorNames.getOrDefault(r.getGuarantorId(), "a guarantor")
+						+ "'s shares";
+			};
+			String detail = r.isRecovery() ? "" : r.getMethod() + (r.getReference() != null ? " · " + r.getReference() : "");
+			if (r.isVoided()) {
+				detail = (detail.isEmpty() ? "" : detail + " · ") + "reversed: " + r.getVoidReason();
+			}
+			events.add(new LoanEvent(r.getPaidDate(), label, r.getAmount(), detail,
+					r.isRecovery() ? "amber" : "green", r.isVoided()));
+		}
+		for (LateFee fee : v.fees()) {
+			Installment i = v.installmentOf(fee);
+			events.add(new LoanEvent(fee.getChargedOn(), "Late fee charged", fee.getAmount(),
+					i == null ? "" : "installment " + i.getNumber() + " due " + i.getDueDate() + " was missed", "red", false));
+		}
+		if (loan.getDefaultedOn() != null) {
+			events.add(new LoanEvent(loan.getDefaultedOn(), "Defaulted", null,
+					"two payments missed in a row: the whole balance became due", "red", false));
+		}
+		for (GroupDecision d : v.decisions()) {
+			events.add(new LoanEvent(d.getDecidedOn(), d.getKind().getLabel(), null,
+					d.getSummary() + " · " + d.getHowAgreed(), "grey", false));
+		}
+		if (loan.getStatus() == LoanStatus.REPAID) {
+			v.repayments().stream().filter(r -> !r.isVoided()).map(Repayment::getPaidDate).max(LocalDate::compareTo)
+					.ifPresent(date -> events.add(new LoanEvent(date, "Repaid in full", null, "", "green", false)));
+		}
+		if (loan.getStatus() == LoanStatus.CANCELLED) {
+			events.add(new LoanEvent(loan.getDisbursedDate(), "Cancelled", null, loan.getCancelReason(), "grey", false));
+		}
+		// Same day: in the order things happen (disbursed, fees, payments, decisions, outcomes).
+		List<String> order = List.of("Disbursed", "Late fee charged", "Defaulted");
+		events.sort(java.util.Comparator.comparing(LoanEvent::date)
+				.thenComparing(e -> order.contains(e.label()) ? order.indexOf(e.label()) : order.size()));
+		return events;
+	}
+
 	/** Debts the member owes guarantors (as borrower) and is owed (as guarantor), still standing. */
 	public List<DebtView> debtsInvolving(Long memberId) {
 		Map<Long, GuarantorDebt> all = new LinkedHashMap<>();

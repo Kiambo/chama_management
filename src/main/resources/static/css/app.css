@@ -327,3 +327,12 @@ fieldset.decision legend { font-family: var(--serif); font-size: 1.15rem; font-w
 ul.plain { list-style: none; padding: 0; margin: 0.5rem 0; display: flex; flex-direction: column; gap: 0.4rem; }
 ul.decisions li { padding: 0.5rem 0; border-bottom: 1px solid var(--card-border); }
 .inline-form input[type="text"] { padding: 0.3rem 0.5rem; font-size: 0.85rem; }
+
+/* Member page: loan history timeline */
+.loan-history .card-head { align-items: flex-start; }
+.nowrap { white-space: nowrap; }
+.event-dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.45rem; background: var(--line); vertical-align: middle; }
+.event-dot.dot-green { background: var(--green); }
+.event-dot.dot-amber { background: var(--amber); }
+.event-dot.dot-red { background: var(--red); }
+.event-dot.dot-grey { background: var(--muted); }
