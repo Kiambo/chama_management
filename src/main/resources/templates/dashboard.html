@@ -1,37 +1,86 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('dashboard')}"></header>
 <section class="hero">
 	<div class="band-inner">
-		<p class="eyebrow" th:text="${#temporals.format(month, 'MMMM yyyy')}">October 2026</p>
+		<p class="eyebrow" th:text="${@fmt.month(month)}">October 2026</p>
 		<h1 th:text="|${greeting}, ${name}|">Good evening, Lilian</h1>
-		<p class="lede" th:text="${activeMembers == 1} ? '1 active member.' : |${activeMembers} active members.|">7 active members.</p>
+		<p class="lede" th:if="${d.expectedCount > 0}"
+		   th:text="|${d.paidIn} of ${d.expectedCount} contributions are in for this month.|">4 of 6 contributions are in for this month.</p>
+		<p class="lede" th:unless="${d.expectedCount > 0}"
+		   th:text="${activeMembers == 1} ? '1 active member.' : |${activeMembers} active members.|">7 active members.</p>
 	</div>
 </section>
 <main class="page">
-	<div class="stat-grid">
+	<div th:replace="~{fragments/layout :: flash}"></div>
+
+	<div class="card notice" th:unless="${d.openingRecorded}" sec:authorize="hasRole('RECORDER')">
+		<div class="notice-body">
+			<h2 class="notice-title">Opening balances not recorded</h2>
+			<p class="muted">Enter each member's shares and the statement balance at the cut-over so the pool starts from the right figure.</p>
+		</div>
+		<a class="button primary" th:href="@{/opening-balances}">Enter opening balances</a>
+	</div>
+
+	<div class="stat-grid two">
 		<div class="card">
-			<p class="stat-label">Members</p>
-			<p class="stat-value" th:text="${activeMembers}">7</p>
+			<p class="stat-label">MMF pool</p>
+			<p class="stat-value" th:text="${@fmt.kes(d.mmfBalance)}">KES 186,500</p>
+			<p class="stat-sub"
+			   th:classappend="${d.mmfChangeThisMonth.signum() > 0} ? 'good'"
+			   th:text="${d.mmfChangeThisMonth.signum() >= 0} ? |+ ${@fmt.amount(d.mmfChangeThisMonth)} this month| : |${@fmt.amount(d.mmfChangeThisMonth)} this month|">+ 12,000 this month</p>
+		</div>
+		<div class="card">
+			<p class="stat-label" th:text="|MGR pool — ${@fmt.month(month)}|">MGR pool — October 2026</p>
+			<p class="stat-value" th:text="${@fmt.kes(d.mgrCollected)}">KES 6,000</p>
+			<p class="stat-sub" th:classappend="${d.mgrOutstanding.signum() > 0} ? 'attention' : 'good'"
+			   th:text="${d.mgrOutstanding.signum() > 0} ? |${@fmt.amount(d.mgrOutstanding)} of ${@fmt.amount(d.mgrExpected)} outstanding| : 'All in'">3,000 outstanding</p>
 		</div>
 		<div class="card">
 			<p class="stat-label">Contributions</p>
-			<span class="pill">Coming soon</span>
+			<p class="stat-value" th:text="|${d.paidIn} of ${d.expectedCount}|">4 of 6</p>
+			<p class="stat-sub">paid in full this month</p>
 		</div>
 		<div class="card">
-			<p class="stat-label">MMF pool</p>
-			<span class="pill">Coming soon</span>
+			<p class="stat-label" th:text="|Goal — ${@fmt.kes(d.goal)}|">Goal — KES 250,000</p>
+			<p class="stat-value" th:text="|${d.goalPercent}%|">75%</p>
+			<div class="progress" role="progressbar" th:attr="aria-valuenow=${d.goalPercent}" aria-valuemin="0" aria-valuemax="100">
+				<span th:style="|width: ${d.goalPercent}%|"></span>
+			</div>
 		</div>
 	</div>
+
+	<section class="card">
+		<div class="card-head">
+			<h2>This month</h2>
+			<a sec:authorize="hasRole('RECORDER')" class="button primary" th:href="@{/contributions/new}">Record contribution</a>
+		</div>
+		<p th:if="${d.rows.isEmpty()}" class="muted">No members yet. <a th:href="@{/members/new}">Add the first one.</a></p>
+		<div class="table-wrap" th:unless="${d.rows.isEmpty()}">
+			<table>
+				<thead>
+				<tr><th>Member</th><th class="num">Paid</th><th class="num">Owed</th><th>Status</th></tr>
+				</thead>
+				<tbody>
+				<tr th:each="r : ${d.rows}">
+					<td><a th:href="@{/members/{id}(id=${r.member.id})}" th:text="${r.member.fullName}">Name</a></td>
+					<td class="num" th:text="${@fmt.amount(r.paid.total())}">3,500</td>
+					<td class="num" th:text="${@fmt.amount(r.owed().total())}">0</td>
+					<td><span th:replace="~{fragments/layout :: status(${r.status})}"></span></td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
 
 	<div class="card notice">
 		<div class="notice-body">
 			<h2 class="notice-title">More is on the way</h2>
-			<p class="muted">Contributions, the MMF pool, loans and the merry-go-round arrive in the next phases.</p>
+			<p class="muted">Loans and the merry-go-round arrive in the next phases.</p>
 		</div>
-		<a class="button primary" th:href="@{/members}">Manage members</a>
+		<a class="button" th:href="@{/members}">Manage members</a>
 	</div>
 </main>
 </body>

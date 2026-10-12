@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Contributions')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('contributions')}"></header>
+<main class="page">
+	<div class="title-row">
+		<div>
+			<p class="eyebrow">Contributions</p>
+			<h1 th:text="${@fmt.month(month)}">October 2026</h1>
+			<p class="muted" th:text="|Due by day ${dueDay} of the month. Savings are filled first, then MGR.|">Due by day 10 of the month.</p>
+		</div>
+		<form method="get" th:action="@{/contributions}" class="inline-form">
+			<label class="sr-only" for="month">Month</label>
+			<select id="month" name="month" onchange="this.form.submit()">
+				<option th:each="m : ${months}" th:value="${m}" th:text="${@fmt.month(m)}"
+						th:selected="${m == month}">October 2026</option>
+			</select>
+			<noscript><button type="submit" class="button">Show</button></noscript>
+		</form>
+	</div>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+
+	<p th:if="${rows.isEmpty()}" class="muted">No active members had joined by this month.</p>
+
+	<div class="table-wrap" th:unless="${rows.isEmpty()}">
+		<table>
+			<thead>
+			<tr>
+				<th>Member</th>
+				<th class="num">Due</th>
+				<th class="num">Paid</th>
+				<th class="num">Owed</th>
+				<th>Status</th>
+				<th sec:authorize="hasRole('RECORDER')"></th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr th:each="r : ${rows}">
+				<td>
+					<a th:href="@{/members/{id}(id=${r.member.id})}" th:text="${r.member.fullName}">Name</a>
+					<span class="hint" th:if="${r.optOut != null and r.optOut.any}"
+						  th:text="${r.optedOutSavings() and r.optedOutMgr()} ? ' · opted out' : (${r.optedOutSavings()} ? ' · savings opted out' : ' · MGR opted out')"> · opted out</span>
+				</td>
+				<td class="num" th:text="${@fmt.amount(r.due.total())}">3,500</td>
+				<td class="num" th:text="${@fmt.amount(r.paid.total())}">3,500</td>
+				<td class="num" th:text="${@fmt.amount(r.owed().total())}">0</td>
+				<td><span th:replace="~{fragments/layout :: status(${r.status})}"></span></td>
+				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+					<a th:if="${r.canRecord()}" th:href="@{/contributions/new(memberId=${r.member.id}, month=${month})}">Record</a>
+					<a th:href="@{/contributions/opt-out(memberId=${r.member.id}, month=${month})}">Opt-out</a>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<th:block th:with="payments=${rows.?[!payments.isEmpty()]}">
+	<section th:unless="${payments.isEmpty()}">
+		<h2>Payments this month</h2>
+		<div class="table-wrap">
+			<table>
+				<thead>
+				<tr><th>Member</th><th>Paid on</th><th class="num">Amount</th><th class="num">MMF</th><th class="num">MGR</th><th>Method</th><th sec:authorize="hasRole('RECORDER')"></th></tr>
+				</thead>
+				<tbody>
+				<th:block th:each="r : ${payments}">
+					<tr th:each="c : ${r.payments}">
+						<td th:text="${r.member.fullName}">Name</td>
+						<td>
+							<span th:text="${#temporals.format(c.paidDate, 'd MMM yyyy')}">8 Oct 2026</span>
+							<span class="hint" th:if="${c.agreedBackpay}"> · agreed back-payment</span>
+						</td>
+						<td class="num" th:text="${@fmt.amount(c.amount)}">3,500</td>
+						<td class="num muted" th:text="${@fmt.amount(c.mmfPortion)}">2,000</td>
+						<td class="num muted" th:text="${@fmt.amount(c.mgrPortion)}">1,500</td>
+						<td>
+							<span th:text="${c.method}">M-Pesa</span>
+							<span class="hint" th:if="${c.reference}" th:text="| · ${c.reference}|"> · ref</span>
+						</td>
+						<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+							<a th:href="@{/contributions/{id}/correct(id=${c.id})}">Correct</a>
+						</td>
+					</tr>
+				</th:block>
+				</tbody>
+			</table>
+		</div>
+	</section>
+	</th:block>
+</main>
+</body>
+</html>

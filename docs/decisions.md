@@ -16,6 +16,8 @@ the repo.
 | S2 | PostgreSQL everywhere: a Postgres 16 container (docker-compose, port 5433) on localhost, Neon in production. | No |
 | S3 | README.md at the repo root; brief, design PDF, loan policy PDF and this file in `docs/`. | No |
 | S4 | Time zone Africa/Nairobi. Foreign payments (PayPal, deposits) are entered in KES as received. | No |
+| S5 | A `demo` profile uses a separate `chama_demo` database with made-up data, so the real database stays clean until go-live. | Addition |
+| S6 | The database itself refuses UPDATE and DELETE on ledger entries (a Postgres trigger), on top of the app never doing so. | No |
 
 ## Contributions
 
@@ -27,6 +29,10 @@ the repo.
 | C4 | Opting out of savings for a month shows as "Opted out", not "Missed", and does not count as money owed. |
 | C5 | Cut-over month is **October 2026**. Each member gets an opening shares balance and the pool gets an opening balance as at 30 Sep 2026. Entries are month by month from October. |
 | C6 | Fund earnings from the MMF (about 1% a month) are recorded as a "fund earnings" ledger entry from the statement. They belong to the group: they add to the pool, not to anyone's shares. |
+| C7 | An **agreed back-payment** (ticked when recording) counts as paid on time, even though it is paid after the due day. |
+| C8 | A payment can't be more than is still owed for that month; each month is recorded separately. A month can be paid in several payments. |
+| C9 | The statement file (PDF, PNG or JPEG, up to 5 MB) can be attached to fund earnings as evidence. The amount is still typed in. |
+| C10 | Opening balances are entered as each member's shares plus the statement balance; the group money is worked out as statement + loans out - shares. They are corrected together (all reversed, then re-entered). |
 
 ## MMF pool and loan caps
 

@@ -4,11 +4,11 @@ Approved 2026-10-09. Rules and the reasons behind them are in `decisions.md`.
 Each phase ends with passing tests and an app that runs on localhost, and the
 work stops after each phase for review.
 
-1. **Foundation**: project setup, Postgres (docker-compose locally,
+1. **Foundation** (done): project setup, Postgres (docker-compose locally,
    Testcontainers in tests), Flyway, login (Spring Security, BCrypt,
    `RECORDER` / `MEMBER` roles), member CRUD (no delete, only deactivate),
    page layout, Dockerfile.
-2. **Contributions and ledger**: record contributions (savings first, MGR
+2. **Contributions and ledger** (done, see `phase-2-plan.md`): record contributions (savings first, MGR
    second), month-by-month opt-outs, method and reference, back-dating,
    status per member per month (Paid, Paid late, Missed, Partly paid, Opted
    out), opening balances at the cut-over, fund earnings, pool balance from

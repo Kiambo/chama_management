@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head(${member.fullName})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('members')}"></header>
+<main class="page">
+	<div class="title-row">
+		<div class="member-head">
+			<span class="avatar" th:text="${member.initials}">NM</span>
+			<div>
+				<h1 th:text="${member.fullName}">Name</h1>
+				<p class="muted">
+					Member since <span th:text="${#temporals.format(member.joinDate, 'MMMM yyyy')}">March 2025</span>
+					<span th:if="${member.mgrStartDate != null}" th:text="| · in the MGR from ${#temporals.format(member.mgrStartDate, 'MMMM yyyy')}|"></span>
+					<span th:if="${member.mgrStartDate == null}"> · not in the MGR yet</span>
+				</p>
+			</div>
+		</div>
+		<span th:if="${member.active}" class="badge badge-green">Active</span>
+		<span th:unless="${member.active}" class="badge">Inactive</span>
+	</div>
+
+	<div class="stat-grid">
+		<div class="card">
+			<p class="stat-label">Total shares</p>
+			<p class="stat-value" th:text="${@fmt.kes(shares)}">KES 34,000</p>
+			<p class="stat-sub" th:text="${paymentCount == 1} ? '1 payment recorded' : |${paymentCount} payments recorded|">17 payments</p>
+		</div>
+		<div class="card">
+			<p class="stat-label">Active loan</p>
+			<span class="pill">Coming in Phase 3</span>
+		</div>
+		<div class="card">
+			<p class="stat-label">MGR payouts received</p>
+			<span class="pill">Coming in Phase 5</span>
+		</div>
+	</div>
+
+	<h2>Contribution history</h2>
+	<p th:if="${history.isEmpty()}" class="muted">Nothing yet.</p>
+	<div class="table-wrap" th:unless="${history.isEmpty()}">
+		<table>
+			<thead>
+			<tr><th>Month</th><th class="num">Paid</th><th class="num">MMF</th><th class="num">MGR</th><th>Status</th><th sec:authorize="hasRole('RECORDER')"></th></tr>
+			</thead>
+			<tbody>
+			<tr th:each="h : ${history}">
+				<td th:text="${@fmt.month(h.month)}">September 2026</td>
+				<td class="num" th:text="${h.paid.total().signum() > 0} ? ${@fmt.amount(h.paid.total())} : '—'">3,500</td>
+				<td class="num muted" th:text="${h.paid.mmf().signum() > 0} ? ${@fmt.amount(h.paid.mmf())} : '—'">2,000</td>
+				<td class="num muted" th:text="${h.paid.mgr().signum() > 0} ? ${@fmt.amount(h.paid.mgr())} : '—'">1,500</td>
+				<td><span th:replace="~{fragments/layout :: status(${h.status})}"></span></td>
+				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+					<a th:if="${h.canRecord()}" th:href="@{/contributions/new(memberId=${member.id}, month=${h.month})}">Record</a>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+</main>
+</body>
+</html>

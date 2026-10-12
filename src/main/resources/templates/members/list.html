@@ -28,7 +28,7 @@
 			<tr th:each="m : ${members}" th:classappend="${!m.active} ? 'inactive'">
 				<td>
 					<span class="avatar small" th:text="${m.initials}">GM</span>
-					<span th:text="${m.fullName}">Name</span>
+					<a th:href="@{/members/{id}(id=${m.id})}" th:text="${m.fullName}">Name</a>
 				</td>
 				<td th:text="${#temporals.format(m.joinDate, 'MMMM yyyy')}">March 2025</td>
 				<td th:text="${m.mgrStartDate != null} ? ${#temporals.format(m.mgrStartDate, 'MMMM yyyy')} : 'Not in rotation'">March 2025</td>

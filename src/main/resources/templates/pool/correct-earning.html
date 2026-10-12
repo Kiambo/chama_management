@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Correct fund earnings')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('pool')}"></header>
+<main class="page narrow">
+	<p class="eyebrow">Correct fund earnings</p>
+	<h1 th:text="|${@fmt.kes(earning.amount)} for ${@fmt.month(earning.month)}|">KES 1,850 for September 2026</h1>
+
+	<p>This reverses the earnings in the ledger. The original and the reversal both stay in the history. Afterwards, record the correct figure.</p>
+
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<form th:action="@{/fund-earnings/{id}/correct(id=${earning.id})}" method="post" class="stack">
+		<label>Reason
+			<input type="text" name="reason" maxlength="500" required placeholder="e.g. Typed 1,580 instead of 1,850">
+		</label>
+		<div class="actions">
+			<button type="submit" class="button primary">Reverse these earnings</button>
+			<a class="button" th:href="@{/fund-earnings}">Cancel</a>
+		</div>
+	</form>
+</main>
+</body>
+</html>

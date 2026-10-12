@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Correct a payment')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('contributions')}"></header>
+<main class="page narrow">
+	<p class="eyebrow">Correct a payment</p>
+	<h1 th:text="|${contribution.member.fullName}, ${@fmt.month(contribution.month)}|">Name, October 2026</h1>
+
+	<div class="card">
+		<p><strong th:text="${@fmt.kes(contribution.amount)}">KES 3,500</strong>
+			paid <span th:text="${#temporals.format(contribution.paidDate, 'd MMM yyyy')}">8 Oct 2026</span>
+			by <span th:text="${contribution.method}">M-Pesa</span></p>
+		<p class="muted" th:text="|${@fmt.amount(contribution.mmfPortion)} to savings, ${@fmt.amount(contribution.mgrPortion)} to MGR|">2,000 to savings, 1,500 to MGR</p>
+	</div>
+
+	<div th:if="${contribution.voided}" class="alert alert-red">
+		This payment was already corrected: <span th:text="${contribution.voidReason}">reason</span>
+	</div>
+
+	<th:block th:unless="${contribution.voided}">
+		<p>This reverses the payment in the ledger. Nothing is deleted: the original and the reversal both stay in the history. Afterwards, record the correct payment if there is one.</p>
+
+		<div th:replace="~{fragments/layout :: error}"></div>
+
+		<form th:action="@{/contributions/{id}/correct(id=${contribution.id})}" method="post" class="stack">
+			<label>Reason
+				<input type="text" name="reason" maxlength="500" required placeholder="e.g. Wrong member selected">
+			</label>
+			<div class="actions">
+				<button type="submit" class="button primary">Reverse this payment</button>
+				<a class="button" th:href="@{/contributions(month=${contribution.month})}">Cancel</a>
+			</div>
+		</form>
+	</th:block>
+</main>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Ledger')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('ledger')}"></header>
+<main class="page">
+	<div class="title-row">
+		<div>
+			<p class="eyebrow">Ledger</p>
+			<h1>Every money movement</h1>
+			<p class="muted">Entries are never changed or deleted. A correction adds a reversing entry.
+				MMF pool: <strong th:text="${@fmt.kes(mmfBalance)}">KES 186,500</strong></p>
+		</div>
+	</div>
+
+	<form method="get" th:action="@{/ledger}" class="filters">
+		<label>Member
+			<select name="memberId">
+				<option value="">All</option>
+				<option th:each="m : ${members}" th:value="${m.id}" th:text="${m.fullName}" th:selected="${m.id == memberId}">Name</option>
+			</select>
+		</label>
+		<label>Type
+			<select name="type">
+				<option value="">All</option>
+				<option th:each="t : ${types}" th:value="${t}" th:text="${t.label}" th:selected="${t == type}">Type</option>
+			</select>
+		</label>
+		<button type="submit" class="button">Filter</button>
+	</form>
+
+	<p th:if="${page.isEmpty()}" class="muted">No entries.</p>
+	<div class="table-wrap" th:unless="${page.isEmpty()}">
+		<table>
+			<thead>
+			<tr><th>Date</th><th>Type</th><th>Member</th><th>Month</th><th class="num">Amount</th><th>Recorded</th><th sec:authorize="hasRole('RECORDER')"></th></tr>
+			</thead>
+			<tbody>
+			<tr th:each="e : ${page.content}" th:classappend="${reversed.contains(e.id) or e.reversal} ? 'inactive'">
+				<td th:text="${#temporals.format(e.effectiveDate, 'd MMM yyyy')}">8 Oct 2026</td>
+				<td>
+					<span th:text="${e.type.label}">Contribution to MMF</span>
+					<span class="hint" th:if="${e.reversal}" th:text="| · reverses #${e.reversesId}|"> · reverses</span>
+					<span class="hint" th:if="${reversed.contains(e.id)}"> · reversed</span>
+					<div class="hint" th:if="${e.note}" th:text="${e.note}">note</div>
+				</td>
+				<td th:text="${e.member != null} ? ${e.member.fullName} : '—'">Name</td>
+				<td th:text="${@fmt.month(e.month)}">October 2026</td>
+				<td class="num" th:text="${@fmt.amount(e.amount)}">2,000</td>
+				<td class="hint" th:text="|#${e.id} · ${e.recordedBy}|">#1 · lilian</td>
+				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+					<th:block th:unless="${e.reversal or reversed.contains(e.id)}">
+						<a th:if="${e.contributionId != null}" th:href="@{/contributions/{id}/correct(id=${e.contributionId})}">Correct</a>
+						<a th:if="${e.fundEarningId != null}" th:href="@{/fund-earnings/{id}/correct(id=${e.fundEarningId})}">Correct</a>
+						<a th:if="${e.type.name().startsWith('OPENING')}" th:href="@{/opening-balances}">Correct</a>
+					</th:block>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="pager" th:if="${page.totalPages > 1}">
+		<a th:if="${page.hasPrevious()}" th:href="@{/ledger(memberId=${memberId}, type=${type}, page=${page.number - 1})}">Newer</a>
+		<span class="muted" th:text="|Page ${page.number + 1} of ${page.totalPages}|">Page 1 of 2</span>
+		<a th:if="${page.hasNext()}" th:href="@{/ledger(memberId=${memberId}, type=${type}, page=${page.number + 1})}">Older</a>
+	</div>
+</main>
+</body>
+</html>

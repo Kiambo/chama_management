@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Opening balances')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('pool')}"></header>
+<main class="page narrow">
+	<p class="eyebrow">MMF pool</p>
+	<h1>Opening balances</h1>
+	<p class="muted" th:text="|Balances on ${#temporals.format(openingDate, 'd MMMM yyyy')}, the day before the app takes over.|">Balances on 30 September 2026.</p>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<!-- Already recorded: show them, with a way to redo all of them together. -->
+	<th:block th:if="${recorded}">
+		<div class="table-wrap">
+			<table>
+				<thead><tr><th>Entry</th><th class="num">Amount</th></tr></thead>
+				<tbody>
+				<tr th:each="e : ${entries}">
+					<td th:text="${e.member != null} ? ${e.member.fullName} : 'Group money (past earnings)'">Name</td>
+					<td class="num" th:text="${@fmt.amount(e.amount)}">34,000</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<section class="card notice" sec:authorize="hasRole('RECORDER')">
+			<div class="notice-body">
+				<h2 class="notice-title">Need to change these?</h2>
+				<p class="muted">Every opening entry is reversed together, because the group money depends on all of the shares. Then enter the figures again.</p>
+				<form th:action="@{/opening-balances/redo}" method="post" class="stack">
+					<label>Reason
+						<input type="text" name="reason" maxlength="500" required>
+					</label>
+					<div class="actions"><button type="submit" class="button">Reverse and redo</button></div>
+				</form>
+			</div>
+		</section>
+	</th:block>
+
+	<!-- Not recorded yet: enter, check the worked-out group money, then confirm. -->
+	<form th:unless="${recorded}" th:action="@{/opening-balances}" method="post" class="stack" sec:authorize="hasRole('RECORDER')">
+		<p th:if="${members.isEmpty()}" class="muted">Add the members first.</p>
+
+		<label th:each="m : ${members}"><span th:text="|${m.fullName}'s shares (KES)|">Name's shares</span>
+			<input type="text" inputmode="decimal" th:name="|shares_${m.id}|" th:value="${values['shares_' + m.id]}" placeholder="0">
+		</label>
+
+		<label>MMF statement balance (KES)
+			<input type="text" inputmode="decimal" name="statementBalance" th:value="${values['statementBalance']}" required>
+		</label>
+
+		<div class="card" th:if="${preview != null}">
+			<p class="eyebrow">Check before confirming</p>
+			<table>
+				<tbody>
+				<tr><td>Statement balance</td><td class="num" th:text="${@fmt.amount(preview.statement)}">200,000</td></tr>
+				<tr><td>+ Loans out</td><td class="num" th:text="${@fmt.amount(preview.loansOut)}">0</td></tr>
+				<tr><td>− Members' shares</td><td class="num" th:text="${@fmt.amount(preview.totalShares)}">180,000</td></tr>
+				<tr><td><strong>= Group money (past earnings)</strong></td><td class="num"><strong th:text="${@fmt.amount(preview.groupMoney)}">20,000</strong></td></tr>
+				</tbody>
+			</table>
+			<p class="hint">Loans out at the cut-over are added once loans arrive (Phase 3).</p>
+		</div>
+
+		<div class="actions">
+			<button type="submit" class="button" th:classappend="${preview == null} ? 'primary'" name="confirm" value="false">Check figures</button>
+			<button th:if="${preview != null}" type="submit" class="button primary" name="confirm" value="true">Confirm and save</button>
+		</div>
+	</form>
+</main>
+</body>
+</html>

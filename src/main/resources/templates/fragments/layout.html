@@ -19,8 +19,14 @@
 		<nav sec:authorize="isAuthenticated()">
 			<a th:href="@{/}" th:classappend="${active == 'dashboard'} ? 'current'"
 			   th:attr="aria-current=${active == 'dashboard'} ? 'page'">Dashboard</a>
+			<a th:href="@{/contributions}" th:classappend="${active == 'contributions'} ? 'current'"
+			   th:attr="aria-current=${active == 'contributions'} ? 'page'">Contributions</a>
 			<a th:href="@{/members}" th:classappend="${active == 'members'} ? 'current'"
 			   th:attr="aria-current=${active == 'members'} ? 'page'">Members</a>
+			<a th:href="@{/fund-earnings}" th:classappend="${active == 'pool'} ? 'current'"
+			   th:attr="aria-current=${active == 'pool'} ? 'page'">Pool</a>
+			<a th:href="@{/ledger}" th:classappend="${active == 'ledger'} ? 'current'"
+			   th:attr="aria-current=${active == 'ledger'} ? 'page'">Ledger</a>
 			<form th:action="@{/logout}" method="post" class="inline">
 				<button type="submit" class="link-button">Log out</button>
 			</form>
@@ -29,6 +35,11 @@
 </header>
 
 <div th:fragment="flash" th:if="${message}" class="flash" th:text="${message}">Saved.</div>
+
+<div th:fragment="error" th:if="${error}" class="alert alert-red" th:text="${error}">Something went wrong.</div>
+
+<span th:fragment="status(s)" th:if="${s.label != ''}" class="badge"
+	  th:classappend="'badge-' + ${s.tone}" th:text="${s.label}">Paid</span>
 
 </body>
 </html>

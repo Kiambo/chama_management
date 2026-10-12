@@ -32,6 +32,18 @@ docker compose up -d          # Postgres on port 5433
 Log in with `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env`. That account is
 created the first time the app starts against an empty database.
 
+### Demo mode
+
+To try the app with made-up members and payments, without touching the real
+database:
+
+```
+docker exec chama_postgres createdb -U chama chama_demo   # once
+.\mvnw spring-boot:run "-Dspring-boot.run.profiles=demo"
+```
+
+Demo data is only created when the demo database has no members.
+
 ## Tests
 
 ```

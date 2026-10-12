@@ -20,11 +20,14 @@ public class HomeController {
 	private final Clock clock;
 	private final AppUserRepository users;
 	private final MemberService memberService;
+	private final DashboardService dashboardService;
 
-	public HomeController(Clock clock, AppUserRepository users, MemberService memberService) {
+	public HomeController(Clock clock, AppUserRepository users, MemberService memberService,
+			DashboardService dashboardService) {
 		this.clock = clock;
 		this.users = users;
 		this.memberService = memberService;
+		this.dashboardService = dashboardService;
 	}
 
 	@GetMapping("/")
@@ -34,6 +37,7 @@ public class HomeController {
 		model.addAttribute("name", displayName(principal.getName()));
 		model.addAttribute("month", YearMonth.now(clock));
 		model.addAttribute("activeMembers", memberService.listAll().stream().filter(m -> m.isActive()).count());
+		model.addAttribute("d", dashboardService.build());
 		return "dashboard";
 	}
 

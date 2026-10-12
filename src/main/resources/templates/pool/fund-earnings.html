@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Fund earnings')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('pool')}"></header>
+<main class="page">
+	<div class="title-row">
+		<div>
+			<p class="eyebrow">MMF pool</p>
+			<h1>Fund earnings</h1>
+			<p class="muted">Earnings from the MMF statement. They belong to the group: they grow the pool but not anyone's shares.</p>
+		</div>
+		<a class="button" th:href="@{/opening-balances}">Opening balances</a>
+	</div>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+
+	<section class="card" sec:authorize="hasRole('RECORDER')">
+		<h2>Record earnings</h2>
+		<div th:replace="~{fragments/layout :: error}"></div>
+		<form th:action="@{/fund-earnings}" method="post" enctype="multipart/form-data" class="stack">
+			<div class="grid-2">
+				<label>Month
+					<input type="month" name="month" th:value="${defaultMonth}" required>
+				</label>
+				<label>Amount earned (KES)
+					<input type="number" name="amount" min="0.01" step="0.01" inputmode="decimal" th:value="${amount}" required>
+				</label>
+			</div>
+			<label>Statement reference
+				<input type="text" name="reference" maxlength="100" th:value="${reference}" placeholder="e.g. statement date or number">
+			</label>
+			<label>Statement file (optional)
+				<input type="file" name="statement" accept="application/pdf,image/png,image/jpeg">
+				<span class="hint">PDF, PNG or JPEG, up to 5 MB. Kept as evidence next to the figure.</span>
+			</label>
+			<div class="actions">
+				<button type="submit" class="button primary">Save earnings</button>
+			</div>
+		</form>
+	</section>
+
+	<p th:if="${earnings.isEmpty()}" class="muted">No fund earnings recorded yet.</p>
+	<div class="table-wrap" th:unless="${earnings.isEmpty()}">
+		<table>
+			<thead>
+			<tr><th>Month</th><th class="num">Amount</th><th>Reference</th><th>Statement</th><th sec:authorize="hasRole('RECORDER')"></th></tr>
+			</thead>
+			<tbody>
+			<tr th:each="e : ${earnings}" th:classappend="${e.voided} ? 'inactive'">
+				<td th:text="${@fmt.month(e.month)}">September 2026</td>
+				<td class="num">
+					<span th:text="${@fmt.amount(e.amount)}" th:classappend="${e.voided} ? 'struck'">1,850</span>
+				</td>
+				<td>
+					<span th:text="${e.statementReference}">ref</span>
+					<span class="hint" th:if="${e.voided}" th:text="|Reversed: ${e.voidReason}|">Reversed</span>
+				</td>
+				<td><a th:if="${e.hasStatement()}" th:href="@{/fund-earnings/{id}/statement(id=${e.id})}" target="_blank" rel="noopener">View</a></td>
+				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+					<a th:unless="${e.voided}" th:href="@{/fund-earnings/{id}/correct(id=${e.id})}">Correct</a>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+</main>
+</body>
+</html>

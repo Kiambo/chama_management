@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Record contribution')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('contributions')}"></header>
+<main class="page narrow">
+	<p class="eyebrow">Contributions</p>
+	<h1>Record a contribution</h1>
+	<p class="muted">Savings are filled first, then the MGR pool.</p>
+
+	<form th:action="@{/contributions}" th:object="${form}" method="post" class="stack" novalidate id="contribution-form">
+
+		<div th:if="${#fields.hasGlobalErrors()}" class="alert alert-red">
+			<p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Error</p>
+		</div>
+
+		<div class="grid-2">
+			<label>Member
+				<select th:field="*{memberId}" data-reload>
+					<option value="">Choose…</option>
+					<option th:each="m : ${members}" th:value="${m.id}" th:text="${m.fullName}">Name</option>
+				</select>
+				<span class="field-error" th:if="${#fields.hasErrors('memberId')}" th:errors="*{memberId}">Error</span>
+			</label>
+			<label>Month
+				<select th:field="*{month}" data-reload>
+					<option th:each="m : ${months}" th:value="${m}" th:text="${@fmt.month(m)}">October 2026</option>
+				</select>
+				<span class="field-error" th:if="${#fields.hasErrors('month')}" th:errors="*{month}">Error</span>
+			</label>
+		</div>
+
+		<div class="card split" th:if="${row != null}" id="split"
+			 th:attr="data-owed-mmf=${row.owed().mmf()},data-owed-mgr=${row.owed().mgr()}">
+			<p class="eyebrow">Automatic split</p>
+			<p class="muted" th:if="${!row.canRecord()}">Nothing more is owed for this month.</p>
+			<div class="split-cols" th:if="${row.canRecord()}">
+				<div>
+					<p class="muted">To MMF savings</p>
+					<p class="split-amount">KES <span id="to-mmf" th:text="${@fmt.amount(row.owed().mmf())}">2,000</span></p>
+					<p class="hint">Held as member shares</p>
+				</div>
+				<div>
+					<p class="muted">To MGR pool</p>
+					<p class="split-amount">KES <span id="to-mgr" th:text="${@fmt.amount(row.owed().mgr())}">1,500</span></p>
+					<p class="hint">Paid out to this month's recipient</p>
+				</div>
+			</div>
+			<p class="hint split-foot" th:if="${row.canRecord()}">
+				Owed for this month: KES <span th:text="${@fmt.amount(row.owed().total())}">3,500</span>
+				<span th:if="${row.optedOutSavings()}"> · opted out of savings</span>
+				<span th:if="${row.optedOutMgr()}"> · opted out of MGR</span>
+				<span th:if="${row.due.mgr().signum() == 0 and !row.optedOutMgr()}"> · not in the MGR this month</span>
+			</p>
+			<p class="field-error" id="split-warning" hidden>That is more than is owed for this month.</p>
+		</div>
+
+		<label>Amount (KES)
+			<input type="number" th:field="*{amount}" min="1" step="0.01" inputmode="decimal" id="amount">
+			<span class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">Error</span>
+		</label>
+
+		<div class="grid-2">
+			<label>Date paid
+				<input type="date" th:field="*{paidDate}">
+				<span class="field-error" th:if="${#fields.hasErrors('paidDate')}" th:errors="*{paidDate}">Error</span>
+			</label>
+			<label>Method
+				<input type="text" th:field="*{method}" list="methods" maxlength="50">
+				<datalist id="methods">
+					<option th:each="m : ${methods}" th:value="${m}"></option>
+				</datalist>
+				<span class="field-error" th:if="${#fields.hasErrors('method')}" th:errors="*{method}">Error</span>
+			</label>
+		</div>
+
+		<label>Reference
+			<input type="text" th:field="*{reference}" maxlength="100" placeholder="e.g. M-Pesa code or PayPal transaction ID">
+		</label>
+
+		<label class="check">
+			<input type="checkbox" th:field="*{agreedBackpay}">
+			Agreed back-payment (counts as paid on time)
+		</label>
+
+		<label>Note
+			<input type="text" th:field="*{note}" maxlength="500">
+		</label>
+
+		<div class="actions">
+			<button type="submit" class="button primary">Save contribution</button>
+			<a class="button" th:href="@{/contributions(month=${form.month})}">Cancel</a>
+		</div>
+	</form>
+</main>
+<script>
+	// Changing member or month reloads the form with what that member owes for that month.
+	document.querySelectorAll('[data-reload]').forEach(function (select) {
+		select.addEventListener('change', function () {
+			var member = document.getElementById('memberId').value;
+			var month = document.getElementById('month').value;
+			if (member) {
+				window.location = '/contributions/new?memberId=' + encodeURIComponent(member) + '&month=' + encodeURIComponent(month);
+			}
+		});
+	});
+
+	// Live preview of the split: savings first, then MGR. The server checks it again on save.
+	(function () {
+		var split = document.getElementById('split');
+		var amount = document.getElementById('amount');
+		if (!split || !amount || !document.getElementById('to-mmf')) {
+			return;
+		}
+		var owedMmf = parseFloat(split.dataset.owedMmf);
+		var owedMgr = parseFloat(split.dataset.owedMgr);
+		var fmt = new Intl.NumberFormat('en-KE', { maximumFractionDigits: 2 });
+		function update() {
+			var value = parseFloat(amount.value) || 0;
+			var toMmf = Math.min(value, owedMmf);
+			var toMgr = Math.min(value - toMmf, owedMgr);
+			document.getElementById('to-mmf').textContent = fmt.format(toMmf);
+			document.getElementById('to-mgr').textContent = fmt.format(toMgr);
+			document.getElementById('split-warning').hidden = value <= owedMmf + owedMgr;
+		}
+		amount.addEventListener('input', update);
+		update();
+	})();
+</script>
+</body>
+</html>
