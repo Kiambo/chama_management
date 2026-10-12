@@ -1,10 +1,17 @@
-/* Flat, warm and quiet, after the design mockup: serif headings, sans-serif text,
+/* Flat and quiet, after the design mockup: serif headings, sans-serif text.
+   Brand: plum and blush. Status colours are separate and never reused for branding:
    green = paid / on track, amber = needs attention, red = missed / overdue. */
 :root {
-	--ink: #1f1f1f;
-	--muted: #7a7a7a;
-	--line: #dcdcdc;
+	--ink: #2a1f27;
+	--muted: #7d7179;
+	--line: #e6dbe0;
 	--paper: #ffffff;
+	--ground: #fbf7f8;
+	--plum: #5b2a4e;
+	--plum-dark: #46203c;
+	--rose: #c77d8e;       /* borders, highlights - too light for small text */
+	--rose-ink: #a4506a;   /* rose for text */
+	--blush: #f6e9ed;
 	--amber: #a8742a;
 	--amber-bg: #fdf1e0;
 	--green: #4f6b3f;
@@ -19,15 +26,16 @@
 
 body {
 	margin: 0;
-	background: var(--paper);
+	background: var(--ground);
 	color: var(--ink);
 	font: 15px/1.5 var(--sans);
+	border-top: 4px solid var(--plum);
 }
 
-h1, h2, h3, .brand { font-family: var(--serif); font-weight: 500; }
+h1, h2, h3, .brand { font-family: var(--serif); font-weight: 500; color: var(--plum); }
 h1 { font-size: 2.2rem; margin: 0.2rem 0 0.4rem; }
 
-a { color: var(--amber); }
+a { color: var(--plum); }
 
 .site-header {
 	display: flex;
@@ -40,17 +48,17 @@ a { color: var(--amber); }
 	padding: 1.5rem 1rem 1rem;
 	border-bottom: 1px solid var(--line);
 }
-.brand { font-size: 1.35rem; color: var(--ink); text-decoration: none; }
+.brand { font-size: 1.45rem; font-weight: 600; text-decoration: none; }
 .site-header nav { display: flex; gap: 1.25rem; align-items: center; }
 .site-header nav a { color: var(--muted); text-decoration: none; }
-.site-header nav a.current { color: var(--ink); }
+.site-header nav a.current { color: var(--plum); box-shadow: inset 0 -2px 0 var(--rose); }
 
 .page { max-width: 840px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
 .page.narrow { max-width: 520px; }
 
 .eyebrow {
 	margin: 0;
-	color: var(--amber);
+	color: var(--rose-ink);
 	font-size: 0.75rem;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
@@ -60,8 +68,9 @@ a { color: var(--amber); }
 .title-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 
 .card {
+	background: var(--paper);
 	border: 1px solid var(--line);
-	border-radius: 4px;
+	border-radius: 6px;
 	padding: 1.25rem 1.4rem;
 	margin: 1.25rem 0;
 }
@@ -77,14 +86,15 @@ a { color: var(--amber); }
 	text-decoration: none;
 	cursor: pointer;
 }
-.button.primary { border-color: var(--amber); color: var(--amber); }
-.button:hover { background: #faf7f2; }
+.button:hover { background: var(--blush); }
+.button.primary { background: var(--plum); border-color: var(--plum); color: #fff; }
+.button.primary:hover { background: var(--plum-dark); }
 
 .link-button {
 	background: none;
 	border: 0;
 	padding: 0;
-	color: var(--amber);
+	color: var(--plum);
 	font: inherit;
 	cursor: pointer;
 }
@@ -104,7 +114,7 @@ input, select {
 	color: var(--ink);
 	background: var(--paper);
 }
-input:focus, select:focus { outline: 2px solid var(--amber-bg); border-color: var(--amber); }
+input:focus, select:focus { outline: 2px solid var(--blush); border-color: var(--rose); }
 
 .hint { font-size: 0.8rem; }
 .field-error { color: var(--red); font-size: 0.85rem; }
@@ -143,9 +153,10 @@ tr.inactive td { color: var(--muted); }
 	justify-content: center;
 	width: 3.5rem;
 	height: 3.5rem;
-	border: 1px solid var(--amber);
+	border: 1px solid var(--rose);
 	border-radius: 50%;
-	color: var(--amber);
+	background: var(--blush);
+	color: var(--plum);
 	font-family: var(--serif);
 	font-size: 1.2rem;
 }
