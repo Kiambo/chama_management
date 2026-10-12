@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InstallmentRepository extends JpaRepository<Installment, Long> {
 
-	List<Installment> findByLoanIdOrderByNumber(Long loanId);
+	/** Every installment the loan has ever had, including superseded ones, in due-date order. */
+	List<Installment> findByLoanIdOrderByDueDateAscIdAsc(Long loanId);
 }

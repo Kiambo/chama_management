@@ -41,7 +41,36 @@ public class Installment {
 	@Column(name = "principal_part", nullable = false, precision = 14, scale = 2)
 	private BigDecimal principalPart;
 
+	/** Null for the original schedule; otherwise the change that created this installment. */
+	@Column(name = "schedule_change_id")
+	private Long scheduleChangeId;
+
+	/** Set when a later change replaced this installment. Kept for the history. */
+	@Column(name = "superseded_by_change_id")
+	private Long supersededByChangeId;
+
 	protected Installment() {
+	}
+
+	Installment(Loan loan, LoanCalculator.PlannedInstallment planned, Long scheduleChangeId) {
+		this(loan, planned);
+		this.scheduleChangeId = scheduleChangeId;
+	}
+
+	void supersede(Long changeId) {
+		this.supersededByChangeId = changeId;
+	}
+
+	public boolean isSuperseded() {
+		return supersededByChangeId != null;
+	}
+
+	public Long getScheduleChangeId() {
+		return scheduleChangeId;
+	}
+
+	public Long getSupersededByChangeId() {
+		return supersededByChangeId;
 	}
 
 	Installment(Loan loan, LoanCalculator.PlannedInstallment planned) {

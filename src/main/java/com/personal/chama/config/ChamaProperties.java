@@ -35,10 +35,13 @@ public record ChamaProperties(Contribution contribution, YearMonth cutoverMonth,
 	 * @param oneGuarantorAbove     loans above this need one guarantor
 	 * @param twoGuarantorsAbove    loans above this need two guarantors
 	 * @param dueSoonDays           an installment due within this many days is "due soon"
+	 * @param graceDays             days after the due date before a payment counts as missed
+	 * @param lateFeeMinimum        the late fee is the higher of this...
+	 * @param lateFeePercent        ...and this % of the missed installment
 	 */
 	public record Loan(BigDecimal sharesMultiple, BigDecimal perLoanCapPercent, BigDecimal totalCapPercent,
 			BigDecimal guarantorMinShares, BigDecimal oneGuarantorAbove, BigDecimal twoGuarantorsAbove,
-			int dueSoonDays, Rates rates) {
+			int dueSoonDays, Rates rates, int graceDays, BigDecimal lateFeeMinimum, BigDecimal lateFeePercent) {
 	}
 
 	/** Flat interest, % of principal, by tenure tier. */

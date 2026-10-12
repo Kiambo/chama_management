@@ -37,14 +37,16 @@ public class LoanController {
 	private final LedgerService ledger;
 	private final LoanCalculator calculator;
 	private final OpeningBalanceService openingBalances;
+	private final LatePaymentService latePayments;
 
 	public LoanController(LoanService loanService, MemberService memberService, LedgerService ledger,
-			LoanCalculator calculator, OpeningBalanceService openingBalances) {
+			LoanCalculator calculator, OpeningBalanceService openingBalances, LatePaymentService latePayments) {
 		this.loanService = loanService;
 		this.memberService = memberService;
 		this.ledger = ledger;
 		this.calculator = calculator;
 		this.openingBalances = openingBalances;
+		this.latePayments = latePayments;
 	}
 
 	@GetMapping
@@ -155,6 +157,8 @@ public class LoanController {
 
 	@GetMapping("/{id}")
 	public String show(@PathVariable Long id, Model model) {
+		// Bring fees and status up to date before showing the loan.
+		latePayments.reconcile(id);
 		model.addAttribute("v", loanService.view(id));
 		model.addAttribute("methods", PAYMENT_METHODS);
 		model.addAttribute("today", loanService.today());

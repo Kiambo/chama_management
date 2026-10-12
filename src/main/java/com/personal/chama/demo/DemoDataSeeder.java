@@ -123,6 +123,20 @@ public class DemoDataSeeder implements ApplicationRunner {
 		LoanForm loan = loanForm(founders.get(0), 25_000, Tenure.THREE_MONTHS, today, founders.get(1));
 		loan.setPurpose("School fees");
 		loans.disburse(loan);
+
+		// Late loans to try Phase 4 with: one defaulted (two missed in a row, with a
+		// guarantor), one with a single missed payment and its late fee.
+		LoanForm defaulted = loanForm(founders.get(2), 15_000, Tenure.THREE_MONTHS, today.minusMonths(2).minusDays(10),
+				founders.get(5));
+		defaulted.setKind(LoanKind.EXISTING_AS_AGREED);
+		defaulted.setNote("Demo: two payments missed");
+		loans.disburse(defaulted);
+		LoanForm missed = loanForm(founders.get(3), 5_000, Tenure.ONE_MONTH, today.minusMonths(1).minusDays(8),
+				founders.get(1));
+		missed.setKind(LoanKind.EXISTING_AS_AGREED);
+		missed.setNote("Demo: one payment missed");
+		missed.setGuarantorIds(List.of());
+		loans.disburse(missed);
 	}
 
 	private LoanForm loanForm(Member borrower, long amount, Tenure tenure, LocalDate date, Member guarantor) {

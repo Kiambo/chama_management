@@ -6,7 +6,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -16,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.personal.chama.common.Money;
 import com.personal.chama.contribution.ContributionService;
+import com.personal.chama.decision.GroupDecision;
+import com.personal.chama.decision.GroupDecisionRepository;
 import com.personal.chama.ledger.LedgerEntry;
 import com.personal.chama.ledger.LedgerEntryRepository;
 import com.personal.chama.ledger.LedgerEntryType;
@@ -41,11 +46,18 @@ public class LoanService {
 	private final LoanCalculator calculator;
 	private final AuditorAware<String> auditor;
 	private final Clock clock;
+	private final LoanHistory history;
+	private final LatePaymentService latePayments;
+	private final GuarantorDebtRepository debts;
+	private final GuarantorDebtPaymentRepository debtPayments;
+	private final GroupDecisionRepository decisions;
 
 	public LoanService(LoanRepository loans, GuaranteeRepository guarantees, InstallmentRepository installments,
 			RepaymentRepository repayments, LoanSignatureRepository signatures, MemberRepository members,
 			LedgerService ledger, LedgerEntryRepository ledgerEntries, ContributionService contributions,
-			LoanCalculator calculator, AuditorAware<String> auditor, Clock clock) {
+			LoanCalculator calculator, AuditorAware<String> auditor, Clock clock, LoanHistory history,
+			LatePaymentService latePayments, GuarantorDebtRepository debts, GuarantorDebtPaymentRepository debtPayments,
+			GroupDecisionRepository decisions) {
 		this.loans = loans;
 		this.guarantees = guarantees;
 		this.installments = installments;
@@ -58,6 +70,11 @@ public class LoanService {
 		this.calculator = calculator;
 		this.auditor = auditor;
 		this.clock = clock;
+		this.history = history;
+		this.latePayments = latePayments;
+		this.debts = debts;
+		this.debtPayments = debtPayments;
+		this.decisions = decisions;
 	}
 
 	public LocalDate today() {
@@ -71,7 +88,7 @@ public class LoanService {
 		Member borrower = member(borrowerId);
 		BigDecimal shares = ledger.sharesOf(borrowerId);
 		BorrowingLimit limit = calculator.limit(shares, ledger.poolTotal(), ledger.principalOutstanding());
-		Optional<Loan> activeLoan = loans.findFirstByBorrowerIdAndStatus(borrowerId, LoanStatus.ACTIVE);
+		Optional<Loan> activeLoan = loans.findFirstByBorrowerIdAndStatusIn(borrowerId, LoanStatus.OPEN);
 		BigDecimal overdue = overdueAmount(borrowerId);
 
 		List<String> blockers = new ArrayList<>();
@@ -93,11 +110,8 @@ public class LoanService {
 	 * due date (Phase 3 plan, Q4).
 	 */
 	public BigDecimal overdueAmount(Long memberId) {
-		BigDecimal loanOverdue = loans.findFirstByBorrowerIdAndStatus(memberId, LoanStatus.ACTIVE)
-				.map(l -> schedule(l).lines().stream()
-						.filter(line -> line.installment().getDueDate().isBefore(today()))
-						.map(RepaymentSchedule.Line::owed)
-						.reduce(Money.ZERO, BigDecimal::add))
+		BigDecimal loanOverdue = loans.findFirstByBorrowerIdAndStatusIn(memberId, LoanStatus.OPEN)
+				.map(l -> history.dueNow(l, history.schedule(l)))
 				.orElse(Money.ZERO);
 		return contributions.overdueAmount(memberId).add(loanOverdue);
 	}
@@ -174,7 +188,7 @@ public class LoanService {
 			if (form.getNote() == null || form.getNote().isBlank()) {
 				throw new LoanException("Say why this loan is recorded as agreed rather than checked against the policy.");
 			}
-			if (loans.findFirstByBorrowerIdAndStatus(borrower.getId(), LoanStatus.ACTIVE).isPresent()) {
+			if (loans.findFirstByBorrowerIdAndStatusIn(borrower.getId(), LoanStatus.OPEN).isPresent()) {
 				throw new LoanException(borrower.getFullName() + " already has an active loan (one at a time).");
 			}
 		}
@@ -260,8 +274,9 @@ public class LoanService {
 	public Repayment repay(Long loanId, BigDecimal amount, LocalDate paidDate, String method, String reference) {
 		Loan loan = loan(loanId);
 		members.findByIdForUpdate(loan.getBorrower().getId());
+		latePayments.reconcile(loan);
 		if (!loan.isActive()) {
-			throw new LoanException("This loan is not active.");
+			throw new LoanException("This loan is not being repaid any more.");
 		}
 		if (amount == null || amount.signum() <= 0 || amount.scale() > 2) {
 			throw new LoanException("Enter an amount more than zero, with at most 2 decimal places.");
@@ -269,53 +284,92 @@ public class LoanService {
 		if (paidDate == null || paidDate.isAfter(today())) {
 			throw new LoanException("The payment date can't be in the future.");
 		}
-		if (paidDate.isBefore(loan.getDisbursedDate())) {
-			throw new LoanException("The payment date can't be before the loan was disbursed.");
+		LocalDate latest = history.latestEventDate(loan);
+		if (paidDate.isBefore(latest)) {
+			throw new LoanException("The payment date can't be before " + latest
+					+ " (the loan's latest payment, change or disbursement).");
 		}
 		if (method == null || method.isBlank()) {
 			throw new LoanException("Enter how it was paid.");
 		}
-		RepaymentSchedule schedule = schedule(loan);
-		RepaymentSchedule.Allocation allocation = schedule.apply(Money.orZero(amount));
+		// Replay up to the payment date: a fee charged after that date isn't paid by it.
+		RepaymentSchedule.Allocation allocation = history.scheduleAsOf(loan, paidDate)
+				.apply(Money.orZero(amount), paidDate);
 
 		Repayment repayment = repayments.save(new Repayment(loan, Money.orZero(amount), paidDate, method.strip(),
 				blankToNull(reference)));
-		Member borrower = loan.getBorrower();
-		if (allocation.interest().signum() > 0) {
-			ledger.post(LedgerEntry.forLoan(LedgerEntryType.LOAN_INTEREST_PAID, allocation.interest(), borrower, paidDate,
-					loan.getId(), repayment.getId(), null));
-		}
-		if (allocation.principal().signum() > 0) {
-			ledger.post(LedgerEntry.forLoan(LedgerEntryType.LOAN_PRINCIPAL_REPAID, allocation.principal(), borrower,
-					paidDate, loan.getId(), repayment.getId(), null));
-		}
-		if (schedule.isFullyPaid()) {
-			loan.markRepaid();
-		}
+		postAllocation(loan, allocation, paidDate, repayment.getId());
+		afterPayment(loan);
 		return repayment;
 	}
 
+	/** Ledger entries for the parts of a payment: late fee, interest, principal - all into the pool. */
+	void postAllocation(Loan loan, RepaymentSchedule.Allocation allocation, LocalDate date, Long repaymentId) {
+		Member borrower = loan.getBorrower();
+		if (allocation.fee().signum() > 0) {
+			ledger.post(LedgerEntry.forLoan(LedgerEntryType.LATE_FEE_PAID, allocation.fee(), borrower, date,
+					loan.getId(), repaymentId, null));
+		}
+		if (allocation.interest().signum() > 0) {
+			ledger.post(LedgerEntry.forLoan(LedgerEntryType.LOAN_INTEREST_PAID, allocation.interest(), borrower, date,
+					loan.getId(), repaymentId, null));
+		}
+		if (allocation.principal().signum() > 0) {
+			ledger.post(LedgerEntry.forLoan(LedgerEntryType.LOAN_PRINCIPAL_REPAID, allocation.principal(), borrower,
+					date, loan.getId(), repaymentId, null));
+		}
+	}
+
+	/** Brings fees and status up to date, and closes the loan once nothing is owed. */
+	void afterPayment(Loan loan) {
+		latePayments.reconcile(loan);
+		if (history.schedule(loan).isFullyPaid()) {
+			loan.markRepaid();
+		}
+	}
+
 	/**
-	 * Reverses a repayment. Only the most recent one can be corrected, so the way the
-	 * remaining repayments were split between interest and principal never changes.
+	 * Reverses a repayment (or a recovery from shares). Only the most recent one can be
+	 * corrected, and not once the schedule has been changed after it, so the way earlier
+	 * payments were split never changes.
 	 */
 	@Transactional
 	public void voidRepayment(Long loanId, Long repaymentId, String reason) {
 		Loan loan = loan(loanId);
-		List<Repayment> standing = repayments.findByLoanIdAndVoidedAtIsNullOrderByPaidDateAscIdAsc(loanId);
+		List<Repayment> standing = history.standingRepayments(loanId);
 		if (standing.isEmpty() || !standing.get(standing.size() - 1).getId().equals(repaymentId)) {
 			throw new LoanException("Only the most recent repayment can be corrected. Correct the later ones first.");
 		}
 		Repayment repayment = standing.get(standing.size() - 1);
+		boolean changedSince = history.changes(loanId).stream()
+				.anyMatch(c -> c.getRecordedAt().isAfter(repayment.getRecordedAt()));
+		if (changedSince) {
+			throw new LoanException("The loan's schedule was changed after this repayment, so it can't be corrected.");
+		}
+		for (GuarantorDebt debt : debts.findByRepaymentId(repaymentId)) {
+			if (!debtPayments.findByDebtIdAndVoidedAtIsNull(debt.getId()).isEmpty()) {
+				throw new LoanException("The borrower has already repaid part of this to the guarantor. Correct that first.");
+			}
+		}
 		for (LedgerEntry entry : ledgerEntries.findByRepaymentIdAndReversesIdIsNull(repaymentId)) {
 			if (!ledger.isReversed(entry.getId())) {
 				ledger.reverse(entry.getId(), reason);
 			}
 		}
 		repayment.voidWith(reason, auditor.getCurrentAuditor().orElse("system"), Instant.now(clock));
-		if (loan.getStatus() == LoanStatus.REPAID) {
-			loan.reopen();
+		if (repayment.isRecovery()) {
+			loan.clearPoolLoss();
 		}
+		if (loan.getStatus() == LoanStatus.REPAID) {
+			loan.reopen(loan.getDefaultedOn() != null ? LoanStatus.DEFAULTED
+					: wasRestructured(loanId) ? LoanStatus.RESTRUCTURED : LoanStatus.ACTIVE);
+		}
+		latePayments.reconcile(loan);
+	}
+
+	boolean wasRestructured(Long loanId) {
+		return decisions.findByLoanIdOrderByDecidedOnDescIdDesc(loanId).stream()
+				.anyMatch(d -> d.getKind() == GroupDecision.Kind.RESTRUCTURE);
 	}
 
 	// ---------------------------------------------------------------- agreement initials
@@ -363,18 +417,58 @@ public class LoanService {
 
 	public LoanView view(Long loanId) {
 		Loan loan = loan(loanId);
-		RepaymentSchedule schedule = schedule(loan);
-		List<Repayment> standing = repayments.findByLoanIdAndVoidedAtIsNullOrderByPaidDateAscIdAsc(loanId);
+		RepaymentSchedule schedule = history.schedule(loan);
+		List<Repayment> standing = history.standingRepayments(loanId);
+		Map<Long, String> lineStatus = new HashMap<>();
+		for (RepaymentSchedule.Line line : schedule.lines()) {
+			Installment i = line.installment();
+			String status;
+			if (!line.isActive()) {
+				status = i.isSuperseded() ? "Replaced" : "";
+			} else if (line.isPaid()) {
+				status = "Paid";
+			} else if (history.isPastDeadline(i)) {
+				status = "Overdue";
+			} else if (history.isInGrace(i)) {
+				status = "In grace";
+			} else {
+				status = "";
+			}
+			lineStatus.put(i.getId(), status);
+		}
+		List<DebtView> debtViews = debts.findByLoanIdOrderByIdAsc(loanId).stream()
+				.filter(d -> standing.stream().anyMatch(r -> r.getId().equals(d.getRepaymentId())))
+				.map(this::debtView).toList();
 		return new LoanView(loan, loan.getBorrower(),
 				guarantees.findByLoanId(loanId).stream().map(Guarantee::getGuarantor).toList(),
 				schedule, repayments.findByLoanIdOrderByPaidDateDescIdDesc(loanId),
 				standing.isEmpty() ? null : standing.get(standing.size() - 1).getId(),
 				ledger.principalOutstandingFor(loanId), ledger.interestPaidFor(loanId), flag(loan, schedule),
-				signatures.findByLoanId(loanId));
+				signatures.findByLoanId(loanId), lineStatus, history.fees(loanId), debtViews,
+				decisions.findByLoanIdOrderByDecidedOnDescIdDesc(loanId),
+				loan.isActive() ? history.dueNow(loan, schedule) : Money.ZERO,
+				history.recoveryAvailable(loan, schedule));
+	}
+
+	DebtView debtView(GuarantorDebt debt) {
+		List<GuarantorDebtPayment> payments = debtPayments.findByDebtIdOrderByPaidDateAscIdAsc(debt.getId());
+		BigDecimal repaid = payments.stream().filter(p -> !p.isVoided()).map(GuarantorDebtPayment::getAmount)
+				.reduce(Money.ZERO, BigDecimal::add);
+		return new DebtView(debt, repaid, debt.getAmount().subtract(repaid), payments);
+	}
+
+	/** Debts the member owes guarantors (as borrower) and is owed (as guarantor), still standing. */
+	public List<DebtView> debtsInvolving(Long memberId) {
+		Map<Long, GuarantorDebt> all = new LinkedHashMap<>();
+		debts.findByLoanBorrowerIdOrderByIdAsc(memberId).forEach(d -> all.put(d.getId(), d));
+		debts.findByGuarantorIdOrderByIdAsc(memberId).forEach(d -> all.put(d.getId(), d));
+		return all.values().stream()
+				.filter(d -> repayments.findById(d.getRepaymentId()).map(r -> !r.isVoided()).orElse(false))
+				.map(this::debtView).toList();
 	}
 
 	public List<LoanView> active() {
-		return loans.findByStatusOrderByDisbursedDateAsc(LoanStatus.ACTIVE).stream().map(l -> view(l.getId())).toList();
+		return loans.findByStatusInOrderByDisbursedDateAsc(LoanStatus.OPEN).stream().map(l -> view(l.getId())).toList();
 	}
 
 	public List<LoanView> all() {
@@ -391,9 +485,7 @@ public class LoanService {
 	}
 
 	RepaymentSchedule schedule(Loan loan) {
-		List<BigDecimal> paid = repayments.findByLoanIdAndVoidedAtIsNullOrderByPaidDateAscIdAsc(loan.getId()).stream()
-				.map(Repayment::getAmount).toList();
-		return RepaymentSchedule.replay(installments.findByLoanIdOrderByNumber(loan.getId()), paid);
+		return history.schedule(loan);
 	}
 
 	private LoanFlag flag(Loan loan, RepaymentSchedule schedule) {
@@ -401,11 +493,13 @@ public class LoanService {
 		if (!loan.isActive() || next == null) {
 			return LoanFlag.CLOSED;
 		}
-		LocalDate due = next.installment().getDueDate();
-		if (due.isBefore(today())) {
+		boolean overdue = loan.getStatus() == LoanStatus.DEFAULTED || schedule.activeLines().stream()
+				.anyMatch(l -> !l.isPaid() && history.isPastDeadline(l.installment()));
+		if (overdue) {
 			return LoanFlag.OVERDUE;
 		}
-		if (!due.isAfter(today().plusDays(calculator.settings().dueSoonDays()))) {
+		LocalDate due = next.installment().getDueDate();
+		if (history.isInGrace(next.installment()) || !due.isAfter(today().plusDays(calculator.settings().dueSoonDays()))) {
 			return LoanFlag.DUE_SOON;
 		}
 		return LoanFlag.ON_TRACK;
@@ -444,9 +538,35 @@ public class LoanService {
 			BigDecimal total, List<LoanCalculator.PlannedInstallment> installments, int requiredGuarantors) {
 	}
 
+	public record DebtView(GuarantorDebt debt, BigDecimal repaid, BigDecimal owed, List<GuarantorDebtPayment> payments) {
+
+		/** Only the latest standing payment can be corrected. */
+		public Long correctablePaymentId() {
+			return payments.stream().filter(p -> !p.isVoided()).reduce((a, b) -> b).map(GuarantorDebtPayment::getId)
+					.orElse(null);
+		}
+	}
+
 	public record LoanView(Loan loan, Member borrower, List<Member> guarantors, RepaymentSchedule schedule,
 			List<Repayment> repayments, Long correctableRepaymentId, BigDecimal principalOutstanding,
-			BigDecimal interestPaid, LoanFlag flag, List<LoanSignature> signatures) {
+			BigDecimal interestPaid, LoanFlag flag, List<LoanSignature> signatures, Map<Long, String> lineStatus,
+			List<LateFee> fees, List<DebtView> debts, List<GroupDecision> decisions, BigDecimal dueNow,
+			boolean recoveryAvailable) {
+
+		public String statusOf(RepaymentSchedule.Line line) {
+			return lineStatus.getOrDefault(line.installment().getId(), "");
+		}
+
+		/** What's still owed on a late fee. */
+		public BigDecimal feeOwedOn(LateFee fee) {
+			RepaymentSchedule.Line line = schedule.lineFor(fee.getInstallmentId());
+			return line == null ? fee.payable() : fee.payable().subtract(line.feePaid()).max(BigDecimal.ZERO);
+		}
+
+		public Installment installmentOf(LateFee fee) {
+			RepaymentSchedule.Line line = schedule.lineFor(fee.getInstallmentId());
+			return line == null ? null : line.installment();
+		}
 
 		public BigDecimal remaining() {
 			return schedule.remaining();

@@ -20,7 +20,8 @@ class LoanCalculatorTest {
 	static final ChamaProperties PROPERTIES = new ChamaProperties(null, null, null, new ChamaProperties.Loan(
 			new BigDecimal("3"), new BigDecimal("50"), new BigDecimal("60"), new BigDecimal("20000"),
 			new BigDecimal("20000"), new BigDecimal("35000"), 7,
-			new ChamaProperties.Rates(new BigDecimal("1.5"), new BigDecimal("3"), new BigDecimal("5"), new BigDecimal("8"))));
+			new ChamaProperties.Rates(new BigDecimal("1.5"), new BigDecimal("3"), new BigDecimal("5"), new BigDecimal("8")),
+			5, new BigDecimal("500"), new BigDecimal("5")));
 
 	private final LoanCalculator calculator = new LoanCalculator(PROPERTIES);
 	private static final LocalDate DISBURSED = LocalDate.of(2026, 10, 15);

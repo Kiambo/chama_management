@@ -30,6 +30,8 @@
 			   th:attr="aria-current=${active == 'pool'} ? 'page'">Pool</a>
 			<a th:href="@{/ledger}" th:classappend="${active == 'ledger'} ? 'current'"
 			   th:attr="aria-current=${active == 'ledger'} ? 'page'">Ledger</a>
+			<a th:href="@{/decisions}" th:classappend="${active == 'decisions'} ? 'current'"
+			   th:attr="aria-current=${active == 'decisions'} ? 'page'">Decisions</a>
 			<form th:action="@{/logout}" method="post" class="inline">
 				<button type="submit" class="link-button">Log out</button>
 			</form>
@@ -52,6 +54,27 @@
 	<input type="text" maxlength="50" placeholder="How was it paid?" hidden
 		   th:value="${value != null and !methods.contains(value)} ? ${value}">
 </div>
+
+<!--/* The group decision behind an action (decision G1). The form needs enctype="multipart/form-data". */-->
+<fieldset th:fragment="decisionFields" class="decision">
+	<legend>Group decision</legend>
+	<div class="grid-2">
+		<label>Date decided
+			<input type="date" name="decidedOn" th:value="${decision?.decidedOn} ?: ${#temporals.createToday()}">
+		</label>
+		<label>How the group agreed
+			<input type="text" name="howAgreed" maxlength="300" required th:value="${decision?.howAgreed}"
+				   placeholder="e.g. WhatsApp vote, 6 of 7 in favour">
+		</label>
+	</div>
+	<label>Why (optional)
+		<input type="text" name="reason" maxlength="1000" th:value="${decision?.reason}">
+	</label>
+	<label>Evidence (optional)
+		<input type="file" name="evidence" accept="application/pdf,image/png,image/jpeg">
+		<span class="hint">For example a screenshot of the vote. PDF, PNG or JPEG.</span>
+	</label>
+</fieldset>
 
 <span th:fragment="status(s)" th:if="${s.label != ''}" class="badge"
 	  th:classappend="'badge-' + ${s.tone}" th:text="${s.label}">Paid</span>

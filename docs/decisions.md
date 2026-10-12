@@ -61,6 +61,7 @@ the repo.
 | L12 | Loan amounts are whole KES. "No arrears" (borrowers and guarantors) means no contribution owed past its due day and no loan installment overdue; opted-out months don't count. |
 | L13 | A loan entered by mistake can be **cancelled** (status `CANCELLED`, not in the brief's list) before any repayment; its disbursement is reversed. |
 | L14 | Limits are rounded down to whole KES. The per-loan and total caps use the pool total at the moment the loan is checked. |
+| L15 | Late fees are charged automatically every night, at start-up and when a loan page opens. A repayment dated before a fee was charged never goes to it; a back-dated payment that shows an installment was paid in time cancels its fee. New payments can't be dated before the loan's latest payment or schedule change. |
 
 ## Late payment and recovery (follows the loan policy, **deviation from brief**)
 
@@ -69,21 +70,21 @@ shown the policy, so the policy applies:
 
 | # | Decision |
 |---|---|
-| R1 | When an installment is missed, a late fee is added: the higher of 500 KES or 5% of the installment, per missed month, no grace period. |
+| R1 | **Late fee**: the higher of 500 KES or 5% of the installment (settings). **One fee per missed installment**, added to that installment; a single-payment loan gets one fee added to its total. **Deviation from the policy and brief:** a **5-day grace period** (setting `chama.loan.grace-days`; the policy shared with the group says none) - to be raised with the group. Within the grace days a payment shows as "Due", not "Overdue", and doesn't count as arrears. |
 | R2 | The recorder can then, with one confirmation step, recover the missed installment plus the late fee: first from the borrower's shares, then from the guarantor(s)' shares, then flag the rest as a pool loss. |
-| R3 | A recovered installment still counts as **missed**. Two missed in a row makes the whole balance due, and R2 applies to the full balance. |
+| R3 | An installment is **missed** if it isn't fully paid by its due date plus the grace days. A recovered installment still counts as missed. Two missed in a row makes the loan **DEFAULTED** and the whole balance due (remaining principal + all remaining interest + unpaid fees); no further late fees after that - recovery takes over. |
 | R4 | Single-payment loans (1 month or less): a late fee for each month overdue; recovery available once 1 month overdue. |
-| R5 | Recovery from shares lowers the member's shares and the loan balance by the same amount. The pool total does not change. Lower shares mean a lower borrowing limit (3 x shares) and possibly losing guarantor eligibility (20,000 minimum). |
-| R6 | When a guarantor's shares are used, the borrower owes the guarantor. The app tracks this debt. When the borrower repays it, the money goes into the pool and **restores the guarantor's shares**. |
-| R7 | A pool loss is restructured or written off case by case; the app records the group decision (brief Q5). |
+| R5 | Recovery from shares lowers the member's shares and pays the loan by the same amount. **No cash moves**, so the pool's cash balance doesn't change; the loan stops being "out", so the pool total falls by the principal settled - the member's savings were, in effect, withdrawn to pay it. Lower shares mean a lower borrowing limit (3 x shares) and possibly losing guarantor eligibility (20,000 minimum); both recover as the debt is repaid. |
+| R6 | Guarantors share a shortfall **equally**; if one runs short, the others cover the rest up to their own shares. Anything still left is a pool loss. What a guarantor covers is a debt the borrower owes them; repaying it goes into the pool and **restores the guarantor's shares**. |
+| R7 | A pool loss puts the loan on hold until a group decision: **restructure** (new plan for what's left, no extra interest unless the group agrees a charge) or **write off** (the principal leaves the pool for good and comes out of the group money, not shares; the app warns if it exceeds the group money). |
 | R8 | **Late fees can be forgiven.** The recorder waives a fee with a reason and who approved it. The fee stays in the history; a "fee waived" ledger entry cancels it, so it is no longer owed and no longer counts as pool income. |
-| R9 | A repayment schedule can be changed by group decision (recorded with a reason), e.g. moving installments later. |
+| R9 | A repayment schedule can be changed by group decision (new dates for what's left). An **extension** moves the loan to the tier for the new total tenure (max 6 months); the extra interest is spread with the rest over the months to the new end date. Replaced installments are kept, marked replaced. Unpaid late fees move into the new plan. |
 
 ## Group decisions
 
 | # | Decision |
 |---|---|
-| G1 | Things the group votes on are recorded as **group decisions** (date, what was decided, reason). Used for: pool-loss handling, loan extensions, restructures and schedule changes, fee waivers, and MGR opt-out exceptions. |
+| G1 | Things the group votes on are recorded as **group decisions**: date, what, why, how it was agreed in free text (e.g. "WhatsApp vote, 6 of 7"), and optionally a screenshot of the vote as evidence. No WhatsApp integration: WhatsApp's business API can't read ordinary group chats. Used for fee waivers, extensions, schedule changes, restructures, write-offs and MGR opt-out exceptions. A Decisions page lists them all. |
 
 ## MGR
 

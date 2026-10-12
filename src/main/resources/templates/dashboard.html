@@ -16,6 +16,14 @@
 <main class="page">
 	<div th:replace="~{fragments/layout :: flash}"></div>
 
+	<div class="card notice danger" th:each="v : ${d.activeLoans.?[loan.awaitingDecision]}">
+		<div class="notice-body">
+			<h2 class="notice-title" th:text="|Pool loss on ${v.borrower.fullName}'s loan|">Pool loss</h2>
+			<p class="muted" th:text="|KES ${@fmt.amount(v.remaining())} couldn't be recovered from shares. The group needs to decide: restructure or write off.|">Waiting for a decision</p>
+		</div>
+		<a class="button primary" th:href="@{/loans/{id}(id=${v.loan.id})}">Open the loan</a>
+	</div>
+
 	<div class="card notice" th:unless="${d.openingRecorded}" sec:authorize="hasRole('RECORDER')">
 		<div class="notice-body">
 			<h2 class="notice-title">Opening balances not recorded</h2>

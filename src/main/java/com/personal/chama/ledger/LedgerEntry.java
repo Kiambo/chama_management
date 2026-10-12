@@ -62,6 +62,12 @@ public class LedgerEntry {
 	@Column(name = "repayment_id")
 	private Long repaymentId;
 
+	@Column(name = "late_fee_id")
+	private Long lateFeeId;
+
+	@Column(name = "debt_payment_id")
+	private Long debtPaymentId;
+
 	@Column(name = "period_month")
 	private YearMonth month;
 
@@ -125,6 +131,20 @@ public class LedgerEntry {
 		return entry;
 	}
 
+	public static LedgerEntry forLateFee(LedgerEntryType type, BigDecimal amount, Member borrower, LocalDate date,
+			Long loanId, Long lateFeeId, String note) {
+		LedgerEntry entry = forLoan(type, amount, borrower, date, loanId, null, note);
+		entry.lateFeeId = lateFeeId;
+		return entry;
+	}
+
+	public static LedgerEntry forDebtPayment(BigDecimal amount, Member guarantor, LocalDate date, Long loanId,
+			Long debtPaymentId, String note) {
+		LedgerEntry entry = forLoan(LedgerEntryType.GUARANTOR_DEBT_REPAID, amount, guarantor, date, loanId, null, note);
+		entry.debtPaymentId = debtPaymentId;
+		return entry;
+	}
+
 	/**
 	 * An entry with the opposite amount that cancels this one. Both stay in the history.
 	 * It carries the original's effective date, so balances "as at" any date are as if
@@ -139,6 +159,8 @@ public class LedgerEntry {
 		reversal.fundEarningId = fundEarningId;
 		reversal.loanId = loanId;
 		reversal.repaymentId = repaymentId;
+		reversal.lateFeeId = lateFeeId;
+		reversal.debtPaymentId = debtPaymentId;
 		reversal.reversesId = id;
 		return reversal;
 	}
@@ -177,6 +199,14 @@ public class LedgerEntry {
 
 	public Long getRepaymentId() {
 		return repaymentId;
+	}
+
+	public Long getLateFeeId() {
+		return lateFeeId;
+	}
+
+	public Long getDebtPaymentId() {
+		return debtPaymentId;
 	}
 
 	public YearMonth getMonth() {

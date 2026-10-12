@@ -1,5 +1,6 @@
 package com.personal.chama.loan;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,5 +21,8 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
 	@EntityGraph(attributePaths = "borrower")
 	List<Loan> findByBorrowerIdOrderByDisbursedDateDesc(Long borrowerId);
 
-	Optional<Loan> findFirstByBorrowerIdAndStatus(Long borrowerId, LoanStatus status);
+	Optional<Loan> findFirstByBorrowerIdAndStatusIn(Long borrowerId, Collection<LoanStatus> statuses);
+
+	@EntityGraph(attributePaths = "borrower")
+	List<Loan> findByStatusInOrderByDisbursedDateAsc(Collection<LoanStatus> statuses);
 }

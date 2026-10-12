@@ -11,6 +11,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,6 +26,21 @@ import jakarta.persistence.Table;
 @Table(name = "repayment")
 @EntityListeners(AuditingEntityListener.class)
 public class Repayment {
+
+	/** Where the money came from: the borrower, or recovery from shares (policy section 4). */
+	public enum Source {
+		BORROWER("Borrower"), BORROWER_SHARES("From borrower's shares"), GUARANTOR_SHARES("From guarantor's shares");
+
+		private final String label;
+
+		Source(String label) {
+			this.label = label;
+		}
+
+		public String getLabel() {
+			return label;
+		}
+	}
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,6 +61,14 @@ public class Repayment {
 
 	@Column(length = 100)
 	private String reference;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private Source source = Source.BORROWER;
+
+	/** For GUARANTOR_SHARES: whose shares. */
+	@Column(name = "guarantor_id")
+	private Long guarantorId;
 
 	@CreatedDate
 	@Column(name = "recorded_at", nullable = false, updatable = false)
@@ -71,6 +96,25 @@ public class Repayment {
 		this.paidDate = paidDate;
 		this.method = method;
 		this.reference = reference;
+	}
+
+	static Repayment recovery(Loan loan, BigDecimal amount, LocalDate date, Source source, Long guarantorId) {
+		Repayment r = new Repayment(loan, amount, date, "Recovery", null);
+		r.source = source;
+		r.guarantorId = guarantorId;
+		return r;
+	}
+
+	public Source getSource() {
+		return source;
+	}
+
+	public Long getGuarantorId() {
+		return guarantorId;
+	}
+
+	public boolean isRecovery() {
+		return source != Source.BORROWER;
 	}
 
 	void voidWith(String reason, String by, Instant at) {
@@ -105,6 +149,10 @@ public class Repayment {
 
 	public String getReference() {
 		return reference;
+	}
+
+	public Instant getVoidedAt() {
+		return voidedAt;
 	}
 
 	public Instant getRecordedAt() {

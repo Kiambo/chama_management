@@ -12,6 +12,9 @@ public enum LoanStatus {
 	/** Entered by mistake and reversed. Not in the brief; needed so mistakes can be undone. */
 	CANCELLED("Cancelled");
 
+	/** Statuses of a loan that is still being repaid. */
+	public static final java.util.Set<LoanStatus> OPEN = java.util.EnumSet.of(ACTIVE, DEFAULTED, RESTRUCTURED);
+
 	private final String label;
 
 	LoanStatus(String label) {

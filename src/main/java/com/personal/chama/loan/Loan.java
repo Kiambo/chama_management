@@ -85,6 +85,14 @@ public class Loan {
 	@Column(name = "cancel_reason", length = 500)
 	private String cancelReason;
 
+	/** When two missed installments in a row made the whole balance due. */
+	@Column(name = "defaulted_on")
+	private LocalDate defaultedOn;
+
+	/** Recovery left a shortfall (a pool loss): waiting for the group to restructure or write off. */
+	@Column(name = "awaiting_decision", nullable = false)
+	private boolean awaitingDecision;
+
 	@CreatedDate
 	@Column(name = "recorded_at", nullable = false, updatable = false)
 	private Instant recordedAt;
@@ -132,10 +140,11 @@ public class Loan {
 
 	void markRepaid() {
 		this.status = LoanStatus.REPAID;
+		this.awaitingDecision = false;
 	}
 
-	void reopen() {
-		this.status = LoanStatus.ACTIVE;
+	void reopen(LoanStatus status) {
+		this.status = status;
 	}
 
 	void cancel(String reason) {
@@ -143,8 +152,68 @@ public class Loan {
 		this.cancelReason = reason;
 	}
 
+	/** Still being repaid: active, defaulted or restructured. */
 	public boolean isActive() {
-		return status == LoanStatus.ACTIVE;
+		return status == LoanStatus.ACTIVE || status == LoanStatus.DEFAULTED || status == LoanStatus.RESTRUCTURED;
+	}
+
+	void markDefaulted(LocalDate on) {
+		this.status = LoanStatus.DEFAULTED;
+		this.defaultedOn = on;
+	}
+
+	/** Undoes an automatic default, e.g. when a back-dated repayment shows a payment was on time. */
+	void clearDefault(boolean restructured) {
+		this.status = restructured ? LoanStatus.RESTRUCTURED : LoanStatus.ACTIVE;
+		this.defaultedOn = null;
+	}
+
+	void clearPoolLoss() {
+		this.awaitingDecision = false;
+	}
+
+	void flagPoolLoss() {
+		this.awaitingDecision = true;
+		if (status != LoanStatus.DEFAULTED) {
+			this.status = LoanStatus.DEFAULTED;
+		}
+	}
+
+	/** A longer tenure moves the loan to the tier for the new total tenure (brief 4.4). */
+	void extend(Tenure newTenure, BigDecimal newRate) {
+		this.tenure = newTenure;
+		this.ratePercent = newRate;
+		this.interest = LoanCalculator.interest(principal, newRate);
+		this.total = principal.add(interest);
+	}
+
+	void restructure(BigDecimal extraCharge) {
+		this.status = LoanStatus.RESTRUCTURED;
+		this.awaitingDecision = false;
+		this.defaultedOn = null;
+		this.interest = interest.add(extraCharge);
+		this.total = principal.add(interest);
+	}
+
+	/** Adds an agreed charge (e.g. unpaid late fees moved into a new plan) to what is repaid. */
+	void addCharge(BigDecimal charge) {
+		if (charge.signum() > 0) {
+			this.interest = interest.add(charge);
+			this.total = principal.add(interest);
+		}
+	}
+
+	void writeOff() {
+		this.status = LoanStatus.WRITTEN_OFF;
+		this.awaitingDecision = false;
+	}
+
+	public LocalDate getDefaultedOn() {
+		return defaultedOn;
+	}
+
+	public boolean isAwaitingDecision() {
+		return awaitingDecision;
 	}
 
 	public LocalDate endDate() {

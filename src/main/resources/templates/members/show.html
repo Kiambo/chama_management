@@ -47,6 +47,23 @@
 		</div>
 	</div>
 
+	<th:block th:unless="${debts.isEmpty()}">
+		<h2>Debts between members</h2>
+		<p class="muted">When a guarantor's shares covered a loan, the borrower owes the guarantor until it's repaid.</p>
+		<ul class="plain">
+			<li th:each="d : ${debts}" th:unless="${d.owed.signum() == 0}">
+				<th:block th:if="${d.debt.guarantor.id == member.id}">
+					<strong th:text="${d.debt.loan.borrower.fullName}">Name</strong> owes <span th:text="${member.firstName}">them</span>
+				</th:block>
+				<th:block th:unless="${d.debt.guarantor.id == member.id}">
+					<span th:text="${member.firstName}">They</span> owe <strong th:text="${d.debt.guarantor.fullName}">Name</strong>
+				</th:block>
+				<span th:text="${@fmt.kes(d.owed)}">KES 5,000</span>
+				<a class="hint" th:href="@{/loans/{id}(id=${d.debt.loan.id})}">loan</a>
+			</li>
+		</ul>
+	</th:block>
+
 	<h2>Contribution history</h2>
 	<p th:if="${history.isEmpty()}" class="muted">Nothing yet.</p>
 	<div class="table-wrap" th:unless="${history.isEmpty()}">

@@ -24,7 +24,21 @@ public enum LedgerEntryType {
 	/** Principal paid back into the pool. */
 	LOAN_PRINCIPAL_REPAID("Loan principal repaid", true, false, false, true),
 	/** Loan interest. Goes back into the pool, not to members (brief 4.2). */
-	LOAN_INTEREST_PAID("Loan interest paid", true, false, false);
+	LOAN_INTEREST_PAID("Loan interest paid", true, false, false),
+	/** A late fee is now owed. Not cash until paid. */
+	LATE_FEE_CHARGED("Late fee charged", false, false, false),
+	/** A late fee paid. Goes into the pool, like interest. */
+	LATE_FEE_PAID("Late fee paid", true, false, false),
+	/** A late fee no longer owed (negative), by group decision. */
+	LATE_FEE_WAIVED("Late fee waived", false, false, false),
+	/** The borrower's own shares used to pay their loan (negative). Matched by repayment entries. */
+	RECOVERY_FROM_SHARES("Recovered from borrower's shares", true, true, false),
+	/** A guarantor's shares used to pay the loan they backed (negative). Matched by repayment entries. */
+	GUARANTOR_CALL("Called on guarantor's shares", true, true, false),
+	/** The borrower repays a guarantor: back into the pool and into the guarantor's shares. */
+	GUARANTOR_DEBT_REPAID("Repaid to guarantor", true, true, false),
+	/** Principal written off by group decision: no longer out on loan, and no cash came back. */
+	LOAN_WRITTEN_OFF("Loan written off", false, false, false, true);
 
 	private final String label;
 	private final boolean mmfPool;

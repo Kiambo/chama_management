@@ -15,6 +15,7 @@ public interface GuaranteeRepository extends JpaRepository<Guarantee, Long> {
 	/** Guarantees this member has given on loans that are still active. */
 	@Query("""
 			select g from Guarantee g join fetch g.loan l join fetch l.borrower
-			where g.guarantor.id = :memberId and l.status = com.personal.chama.loan.LoanStatus.ACTIVE""")
+			where g.guarantor.id = :memberId and l.status in (com.personal.chama.loan.LoanStatus.ACTIVE,
+				com.personal.chama.loan.LoanStatus.DEFAULTED, com.personal.chama.loan.LoanStatus.RESTRUCTURED)""")
 	List<Guarantee> findActiveByGuarantor(@Param("memberId") Long memberId);
 }

@@ -39,6 +39,7 @@ public class MemberLedgerController {
 		model.addAttribute("activeLoan", loans.stream().filter(v -> v.loan().isActive()).findFirst().orElse(null));
 		model.addAttribute("loans", loans);
 		model.addAttribute("guaranteeing", loanService.guaranteedBy(id));
+		model.addAttribute("debts", loanService.debtsInvolving(id));
 		return "members/show";
 	}
 }

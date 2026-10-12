@@ -51,7 +51,8 @@ public class LoanCalculator {
 		return split(principal, interest(principal, ratePercent), List.of(tenure.endDate(disbursed)));
 	}
 
-	private static List<PlannedInstallment> split(BigDecimal principal, BigDecimal interest, List<LocalDate> dueDates) {
+	/** Spreads principal and interest over the dates; any rounding remainder goes on the last one. */
+	static List<PlannedInstallment> split(BigDecimal principal, BigDecimal interest, List<LocalDate> dueDates) {
 		int n = dueDates.size();
 		BigDecimal total = principal.add(interest);
 		BigDecimal each = wholeShillings(total.divide(BigDecimal.valueOf(n), 10, RoundingMode.HALF_UP));

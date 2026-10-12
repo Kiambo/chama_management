@@ -84,6 +84,12 @@ public class LedgerService {
 		return Money.orZero(entries.sumByTypesForLoan(LedgerEntryType.loanBookTypes(), loanId)).negate();
 	}
 
+	/** Money in the pool that belongs to nobody's shares: past earnings, interest and fees. */
+	public BigDecimal groupMoney() {
+		BigDecimal totalShares = Money.orZero(entries.sumByTypes(LedgerEntryType.shareTypes()));
+		return poolTotal().subtract(totalShares);
+	}
+
 	public BigDecimal interestPaidFor(Long loanId) {
 		return Money.orZero(entries.sumByTypesForLoan(List.of(LedgerEntryType.LOAN_INTEREST_PAID), loanId));
 	}

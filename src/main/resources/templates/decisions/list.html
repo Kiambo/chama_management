@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Decisions')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('decisions')}"></header>
+<main class="page">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<span aria-current="page">Decisions</span>
+	</nav>
+	<p class="eyebrow">Group decisions</p>
+	<h1>Decisions</h1>
+	<p class="muted">Everything the group has voted on: fee waivers, extensions, schedule changes, restructures and write-offs.</p>
+
+	<p th:if="${decisions.isEmpty()}" class="muted">No decisions recorded yet.</p>
+	<div class="table-wrap" th:unless="${decisions.isEmpty()}">
+		<table>
+			<thead><tr><th>Date</th><th>Decision</th><th>How agreed</th><th></th></tr></thead>
+			<tbody>
+			<tr th:each="d : ${decisions}">
+				<td th:text="${#temporals.format(d.decidedOn, 'd MMM yyyy')}">14 Nov 2026</td>
+				<td>
+					<span class="badge" th:text="${d.kind.label}">Loan extended</span>
+					<div th:text="${d.summary}">Summary</div>
+					<div class="hint" th:if="${d.reason}" th:text="${d.reason}">Why</div>
+				</td>
+				<td>
+					<span th:text="${d.howAgreed}">WhatsApp vote, 6 of 7</span>
+					<div class="hint" th:text="|recorded by ${d.recordedBy}|">recorded by</div>
+				</td>
+				<td class="row-actions">
+					<a th:if="${d.loanId != null}" th:href="@{/loans/{id}(id=${d.loanId})}">Loan</a>
+					<a th:if="${d.hasEvidence()}" th:href="@{/decisions/{id}/evidence(id=${d.id})}" target="_blank" rel="noopener">Evidence</a>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+</main>
+</body>
+</html>

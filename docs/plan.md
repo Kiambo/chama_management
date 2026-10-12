@@ -18,7 +18,7 @@ work stops after each phase for review.
    disbursement, repayments (fees, then interest, then principal), existing
    loans ("recorded as agreed" or "checked against the policy"). Tests for
    every rule, including the seven brief test cases.
-4. **Late payments and recovery**: late fees, two-in-a-row acceleration,
+4. **Late payments and recovery** (done, see `phase-4-plan.md`): late fees, two-in-a-row acceleration,
    recovery with confirmation (borrower's shares, guarantors' shares, pool
    loss), debt owed to guarantors, fee waivers, schedule changes,
    extensions, restructures, group decisions.

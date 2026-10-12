@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${restructure} ? 'Restructure a loan' : 'Change a schedule')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('loans')}"></header>
+<main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/loans}">Loans</a>
+		<a th:href="@{/loans/{id}(id=${v.loan.id})}" th:text="|${v.borrower.fullName}'s loan|">Loan</a>
+		<span aria-current="page" th:text="${restructure} ? 'Restructure' : 'Change schedule'">Change schedule</span>
+	</nav>
+	<p class="eyebrow" th:text="${restructure} ? 'Restructure a loan' : 'Change the repayment schedule'">Change</p>
+	<h1 th:text="|${@fmt.kes(v.remaining())} left on ${v.borrower.fullName}'s loan|">KES 10,500 left</h1>
+	<p class="muted" th:if="${restructure}">A new repayment plan for what's left, agreed by the group. No extra interest unless the group decides one.</p>
+	<p class="muted" th:unless="${restructure}">Moves the remaining payments to new dates. The amount owed doesn't change.</p>
+	<p class="hint">The unpaid installments are kept in the history, marked replaced. Any unpaid late fees move into the new plan.</p>
+
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<form th:action="@{/loans/{id}/schedule(id=${v.loan.id})}" method="post" enctype="multipart/form-data" class="stack">
+		<input type="hidden" name="restructure" th:value="${restructure}">
+		<div class="grid-2">
+			<label>First new payment
+				<input type="date" name="firstDue" th:value="${param.firstDue != null} ? ${param.firstDue[0]} : ${defaultFirstDue}" required>
+			</label>
+			<label>Number of monthly payments
+				<input type="number" name="count" min="1" max="12" value="1" required>
+			</label>
+		</div>
+		<label th:if="${restructure}">Extra charge agreed by the group (optional, KES)
+			<input type="number" name="extraCharge" min="0" step="1" value="0">
+		</label>
+		<fieldset th:replace="~{fragments/layout :: decisionFields}"></fieldset>
+		<div class="actions">
+			<button type="submit" class="button primary" th:text="${restructure} ? 'Restructure' : 'Change the schedule'">Save</button>
+			<a class="button" th:href="@{/loans/{id}(id=${v.loan.id})}">Cancel</a>
+		</div>
+	</form>
+</main>
+</body>
+</html>

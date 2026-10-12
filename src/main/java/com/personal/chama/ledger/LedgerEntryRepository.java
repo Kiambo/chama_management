@@ -41,6 +41,10 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, Long> 
 
 	List<LedgerEntry> findByRepaymentIdAndReversesIdIsNull(Long repaymentId);
 
+	List<LedgerEntry> findByLateFeeIdAndTypeAndReversesIdIsNull(Long lateFeeId, LedgerEntryType type);
+
+	List<LedgerEntry> findByDebtPaymentIdAndReversesIdIsNull(Long debtPaymentId);
+
 	List<LedgerEntry> findByLoanIdAndTypeAndReversesIdIsNull(Long loanId, LedgerEntryType type);
 
 	boolean existsByReversesId(Long reversesId);
