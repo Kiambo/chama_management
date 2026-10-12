@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('dashboard')}"></header>
+<main class="page">
+	<p class="eyebrow" th:text="${#temporals.format(month, 'MMMM yyyy')}">October 2026</p>
+	<h1 th:text="|${greeting}, ${name}|">Good evening</h1>
+	<p class="lede" th:text="|${activeMembers} active members.|">7 active members.</p>
+
+	<div class="card">
+		<p class="muted">Contributions, the MMF pool, loans and the merry-go-round arrive in the next phases.</p>
+		<a class="button" th:href="@{/members}">Manage members</a>
+	</div>
+</main>
+</body>
+</html>

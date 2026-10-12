@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Log in')}"></head>
+<body>
+<main class="page narrow">
+	<p class="eyebrow">Family Chama</p>
+	<h1>Log in</h1>
+
+	<div th:if="${param.error}" class="alert alert-red">That username and password don't match.</div>
+	<div th:if="${param.logout}" class="alert alert-green">You've logged out.</div>
+
+	<form th:action="@{/login}" method="post" class="stack">
+		<label>Username
+			<input type="text" name="username" autocomplete="username" required autofocus>
+		</label>
+		<label>Password
+			<input type="password" name="password" autocomplete="current-password" required>
+		</label>
+		<div class="actions">
+			<button type="submit" class="button primary">Log in</button>
+		</div>
+	</form>
+</main>
+</body>
+</html>

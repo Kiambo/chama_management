@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${member} != null ? 'Edit member' : 'Add member')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('members')}"></header>
+<main class="page narrow">
+	<p class="eyebrow">Members</p>
+	<h1 th:text="${member} != null ? 'Edit ' + ${member.fullName} : 'Add a member'">Add a member</h1>
+
+	<form th:action="${member} != null ? @{/members/{id}(id=${member.id})} : @{/members}"
+		  th:object="${form}" method="post" class="stack" novalidate>
+
+		<div th:if="${#fields.hasGlobalErrors()}" class="alert alert-red">
+			<p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Error</p>
+		</div>
+
+		<label>Full name
+			<input type="text" th:field="*{fullName}" maxlength="100" required>
+			<span class="field-error" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}">Error</span>
+		</label>
+
+		<div class="grid-2">
+			<label>Join date
+				<input type="date" th:field="*{joinDate}" required>
+				<span class="hint">When they joined the savings pool.</span>
+				<span class="field-error" th:if="${#fields.hasErrors('joinDate')}" th:errors="*{joinDate}">Error</span>
+			</label>
+			<label>MGR start date
+				<input type="date" th:field="*{mgrStartDate}">
+				<span class="hint">Leave empty if not in the merry-go-round yet.</span>
+				<span class="field-error" th:if="${#fields.hasErrors('mgrStartDateValid')}" th:errors="*{mgrStartDateValid}">Error</span>
+			</label>
+		</div>
+
+		<div class="actions">
+			<button type="submit" class="button primary">Save member</button>
+			<a class="button" th:href="@{/members}">Cancel</a>
+		</div>
+	</form>
+</main>
+</body>
+</html>

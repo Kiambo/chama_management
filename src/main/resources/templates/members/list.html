@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Members')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('members')}"></header>
+<main class="page">
+	<div class="title-row">
+		<h1>Members</h1>
+		<a sec:authorize="hasRole('RECORDER')" class="button primary" th:href="@{/members/new}">Add member</a>
+	</div>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+
+	<p th:if="${members.isEmpty()}" class="muted">No members yet. Add the first one.</p>
+
+	<div class="table-wrap" th:unless="${members.isEmpty()}">
+		<table>
+			<thead>
+			<tr>
+				<th>Name</th>
+				<th>Joined</th>
+				<th>MGR from</th>
+				<th>Status</th>
+				<th sec:authorize="hasRole('RECORDER')"></th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr th:each="m : ${members}" th:classappend="${!m.active} ? 'inactive'">
+				<td>
+					<span class="avatar small" th:text="${m.initials}">GM</span>
+					<span th:text="${m.fullName}">Name</span>
+				</td>
+				<td th:text="${#temporals.format(m.joinDate, 'MMMM yyyy')}">March 2025</td>
+				<td th:text="${m.mgrStartDate != null} ? ${#temporals.format(m.mgrStartDate, 'MMMM yyyy')} : 'Not in rotation'">March 2025</td>
+				<td>
+					<span th:if="${m.active}" class="badge badge-green">Active</span>
+					<span th:unless="${m.active}" class="badge">Inactive</span>
+				</td>
+				<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+					<a th:href="@{/members/{id}/edit(id=${m.id})}">Edit</a>
+					<form th:if="${m.active}" th:action="@{/members/{id}/deactivate(id=${m.id})}" method="post" class="inline">
+						<button type="submit" class="link-button">Mark inactive</button>
+					</form>
+					<form th:unless="${m.active}" th:action="@{/members/{id}/activate(id=${m.id})}" method="post" class="inline">
+						<button type="submit" class="link-button">Reactivate</button>
+					</form>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+</main>
+</body>
+</html>
