@@ -38,7 +38,9 @@ public enum LedgerEntryType {
 	/** The borrower repays a guarantor: back into the pool and into the guarantor's shares. */
 	GUARANTOR_DEBT_REPAID("Repaid to guarantor", true, true, false),
 	/** Principal written off by group decision: no longer out on loan, and no cash came back. */
-	LOAN_WRITTEN_OFF("Loan written off", false, false, false, true);
+	LOAN_WRITTEN_OFF("Loan written off", false, false, false, true),
+	/** The month's MGR pool paid to the recipient (negative). The MGR side is a pass-through. */
+	MGR_PAYOUT("MGR payout", false, false, true);
 
 	private final String label;
 	private final boolean mmfPool;

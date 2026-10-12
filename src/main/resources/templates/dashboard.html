@@ -61,6 +61,31 @@
 		</div>
 	</div>
 
+	<section class="card rotation">
+		<div class="card-head">
+			<h2>Merry-go-round rotation</h2>
+			<span class="hint" th:if="${d.rotation != null and d.rotation.position > 0}"
+				  th:text="|Round ${d.rotation.round} · month ${d.rotation.position} of ${d.rotation.length}|">Round 5 · month 2 of 7</span>
+		</div>
+		<p th:if="${d.rotation == null}" class="muted">No rotation yet. <a th:href="@{/mgr}">Set it up</a>.</p>
+		<th:block th:if="${d.rotation != null}">
+			<div class="rotation-now" th:if="${d.rotation.receiving != null}" th:with="r=${d.rotation.receiving}">
+				<span class="avatar" th:text="${r.member.initials}">WM</span>
+				<div>
+					<p class="eyebrow" th:text="${r.status.name() == 'PAID'} ? 'Received this month' : 'Receiving this month'">Receiving this month</p>
+					<a class="rotation-name" th:href="@{/members/{id}(id=${r.member.id})}" th:text="${r.member.fullName}">Name</a>
+				</div>
+				<span class="rotation-amount" th:text="${@fmt.kes(d.rotation.amount)}">KES 9,000</span>
+			</div>
+			<p th:if="${d.rotation.receiving == null}" class="muted">Nobody receives this month.</p>
+			<div class="rotation-next" th:if="${d.rotation.next != null}" th:with="n=${d.rotation.next}">
+				<span class="avatar small" th:text="${n.member.initials}">KM</span>
+				<span>Next up — <strong th:text="${n.member.fullName}">Name</strong>, <span th:text="${@fmt.month(n.month)}">November 2026</span></span>
+			</div>
+		</th:block>
+	</section>
+
+
 	<section class="card">
 		<div class="card-head">
 			<h2>This month</h2>
@@ -99,7 +124,7 @@
 	<div class="card notice">
 		<div class="notice-body">
 			<h2 class="notice-title">More is on the way</h2>
-			<p class="muted">Late fees and recovery, then the merry-go-round, arrive in the next phases.</p>
+			<p class="muted">The polished dashboard and member pages come next, then go-live with real data.</p>
 		</div>
 		<a class="button" th:href="@{/members}">Manage members</a>
 	</div>

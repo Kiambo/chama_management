@@ -18,6 +18,7 @@ import com.personal.chama.contribution.MonthStatus;
 import com.personal.chama.ledger.LedgerService;
 import com.personal.chama.loan.LoanFlag;
 import com.personal.chama.loan.LoanService;
+import com.personal.chama.mgr.MgrService;
 import com.personal.chama.pool.OpeningBalanceService;
 
 @Service
@@ -27,14 +28,16 @@ public class DashboardService {
 	private final LedgerService ledger;
 	private final OpeningBalanceService openingBalances;
 	private final LoanService loans;
+	private final MgrService mgr;
 	private final ChamaProperties properties;
 
 	public DashboardService(ContributionService contributions, LedgerService ledger,
-			OpeningBalanceService openingBalances, LoanService loans, ChamaProperties properties) {
+			OpeningBalanceService openingBalances, LoanService loans, MgrService mgr, ChamaProperties properties) {
 		this.contributions = contributions;
 		this.ledger = ledger;
 		this.openingBalances = openingBalances;
 		this.loans = loans;
+		this.mgr = mgr;
 		this.properties = properties;
 	}
 
@@ -58,7 +61,23 @@ public class DashboardService {
 		List<LoanService.LoanView> activeLoans = loans.active();
 		return new Dashboard(month, rows, paidIn, expected.size(), ledger.mmfBalance(), ledger.mmfChangeIn(month),
 				mgrCollected, mgrExpected, mgrExpected.subtract(mgrCollected).max(Money.ZERO), goal, goalPercent,
-				openingBalances.isRecorded(), activeLoans, ledger.principalOutstanding(), loanNote(activeLoans));
+				openingBalances.isRecorded(), activeLoans, ledger.principalOutstanding(), loanNote(activeLoans),
+				rotation(month, mgrExpected));
+	}
+
+	/** Who receives this month and who is next, from the current round. */
+	private Rotation rotation(YearMonth month, BigDecimal pool) {
+		return mgr.currentRound().map(round -> {
+			MgrService.SlotView now = round.forMonth(month).orElse(null);
+			MgrService.SlotView next = round.nextAfter(month).orElse(null);
+			BigDecimal amount = now != null && !now.payouts().isEmpty() ? now.gross() : pool;
+			return new Rotation(round.round().getNumber(), now == null ? 0 : round.indexOf(now),
+					round.activeSlots().size(), now, next, amount);
+		}).orElse(null);
+	}
+
+	public record Rotation(int round, int position, int length, MgrService.SlotView receiving,
+			MgrService.SlotView next, BigDecimal amount) {
 	}
 
 	/** "One payment due Fri 16 Oct", "2 payments overdue", "All on track" - the most urgent first. */
@@ -84,7 +103,7 @@ public class DashboardService {
 	public record Dashboard(YearMonth month, List<MemberMonth> rows, long paidIn, int expectedCount,
 			BigDecimal mmfBalance, BigDecimal mmfChangeThisMonth, BigDecimal mgrCollected, BigDecimal mgrExpected,
 			BigDecimal mgrOutstanding, BigDecimal goal, int goalPercent, boolean openingRecorded,
-			List<LoanService.LoanView> activeLoans, BigDecimal principalOutstanding, String loanNote) {
+			List<LoanService.LoanView> activeLoans, BigDecimal principalOutstanding, String loanNote, Rotation rotation) {
 
 		public boolean loanAttention() {
 			return activeLoans.stream().anyMatch(v -> v.flag() == LoanFlag.OVERDUE || v.flag() == LoanFlag.DUE_SOON);

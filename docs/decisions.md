@@ -90,12 +90,14 @@ shown the policy, so the policy applies:
 
 | # | Decision |
 |---|---|
-| M1 | MGR is paid on the 10th, only once every participating member has paid their MGR portion in full. |
-| M2 | A recipient who hasn't paid their 2,000 savings can have it deducted from their payout. Example: 9,000 - 2,000 = 7,000 paid out, and 2,000 recorded as the recipient's savings for that month. |
+| M1 | MGR is paid **by** the 10th (it can be earlier if everyone has paid), only once every participating member has paid their MGR part. In a genuine emergency it can be paid before that with a recorded group decision; MGR money that comes in afterwards is paid on to the same recipient as a **top-up**. |
+| M2 | The **recipient's own MGR part** is never needed up front: if unpaid, it is **netted** from the payout. Their **unpaid savings can be deducted** too (ticked by default). Both are recorded as their contribution for the month. E.g. sends nothing: 9,000 pool, 1,500 netted, 2,000 deducted, 5,500 sent; sends only savings: 7,500 sent. |
 | M3 | The current rotation started September 2026 and is **Round 5**; later rounds count up. A round has as many months as there are members in the rotation. |
-| M4 | A member who opts out of MGR in any month **loses their turn for that round** and can't rejoin until the next round starts. |
+| M4 | A member who opts out of MGR in any month **loses their turn for that round**; everyone after them **moves up a month** and the round ends a month early. They are back in from the next round. |
 | M5 | A member who has **already received** their payout this round cannot opt out of MGR for the rest of the round, unless a group decision allows it. |
 | M6 | The September 2026 payout is entered as history; October 2026 is the first payout recorded live. |
+| M7 | Who receives each month is worked out from the round's order, the payouts made and turns lost - nothing is advanced by hand. A new round defaults to the previous order (editable); its number counts up. The order of a round can change only while it has no payouts. |
+| M8 | Payout method and reference are recorded like other payments. Only the most recent payout can be corrected (reversed), which also reverses anything netted or deducted. |
 
 ## Members
 

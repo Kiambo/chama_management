@@ -22,7 +22,7 @@ work stops after each phase for review.
    recovery with confirmation (borrower's shares, guarantors' shares, pool
    loss), debt owed to guarantors, fee waivers, schedule changes,
    extensions, restructures, group decisions.
-5. **Merry-go-round**: rotation and rounds, payout only when all
+5. **Merry-go-round** (done, see `phase-5-plan.md`): rotation and rounds, payout only when all
    participants have paid, deduction of the recipient's missing savings,
    opt-out rules, advance to next.
 6. **Dashboard and member ledger screens**, matching the mockup.

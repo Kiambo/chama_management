@@ -29,6 +29,7 @@ import com.personal.chama.loan.LoanService;
 import com.personal.chama.loan.Tenure;
 import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberRepository;
+import com.personal.chama.mgr.MgrService;
 import com.personal.chama.pool.FundEarningService;
 import com.personal.chama.pool.OpeningBalanceService;
 
@@ -48,17 +49,19 @@ public class DemoDataSeeder implements ApplicationRunner {
 	private final OpeningBalanceService openingBalances;
 	private final FundEarningService fundEarnings;
 	private final LoanService loans;
+	private final MgrService mgr;
 	private final ChamaProperties properties;
 	private final Clock clock;
 
 	public DemoDataSeeder(MemberRepository members, ContributionService contributions,
-			OpeningBalanceService openingBalances, FundEarningService fundEarnings, LoanService loans,
+			OpeningBalanceService openingBalances, FundEarningService fundEarnings, LoanService loans, MgrService mgr,
 			ChamaProperties properties, Clock clock) {
 		this.members = members;
 		this.contributions = contributions;
 		this.openingBalances = openingBalances;
 		this.fundEarnings = fundEarnings;
 		this.loans = loans;
+		this.mgr = mgr;
 		this.properties = properties;
 		this.clock = clock;
 	}
@@ -137,6 +140,14 @@ public class DemoDataSeeder implements ApplicationRunner {
 		missed.setNote("Demo: one payment missed");
 		missed.setGuarantorIds(List.of());
 		loans.disburse(missed);
+
+		// The rotation: Round 5 from the month before the cut-over, the newcomer last. The
+		// first month was paid before the app, so it's recorded as history.
+		List<Long> order = new java.util.ArrayList<>(founders.stream().map(Member::getId).toList());
+		order.add(newcomer.getId());
+		mgr.saveRound(null, 5, cutover.minusMonths(1), order);
+		mgr.recordHistory(mgr.currentRound().orElseThrow().slots().get(0).slot().getId(), Money.of(9_000),
+				cutover.minusMonths(1).atDay(10));
 	}
 
 	private LoanForm loanForm(Member borrower, long amount, Tenure tenure, LocalDate date, Member guarantor) {

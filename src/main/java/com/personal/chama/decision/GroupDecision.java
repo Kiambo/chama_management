@@ -32,6 +32,7 @@ public class GroupDecision {
 		RESTRUCTURE("Loan restructured"),
 		WRITE_OFF("Loan written off"),
 		MGR_OPT_OUT_EXCEPTION("MGR opt-out allowed"),
+		MGR_PAYOUT_EXCEPTION("MGR paid out before everyone paid in"),
 		OTHER("Other");
 
 		private final String label;

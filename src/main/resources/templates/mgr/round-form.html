@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Round order')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('mgr')}"></header>
+<main class="page narrow">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/mgr}">Merry-go-round</a>
+		<span aria-current="page" th:text="|Round ${number}|">Round 5</span>
+	</nav>
+	<p class="eyebrow" th:text="${roundId != null} ? 'Change the order' : 'Set up a round'">Set up a round</p>
+	<h1 th:text="|Round ${number}|">Round 5</h1>
+	<p class="muted">One member a month, in this order, from the start month. A member joining the MGR later can still be placed at their turn (e.g. their first month in the MGR or after).</p>
+
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<form th:action="@{/mgr/rounds}" method="post" class="stack">
+		<input type="hidden" name="roundId" th:value="${roundId}">
+		<input type="hidden" name="number" th:value="${number}">
+		<label>Start month
+			<input type="month" name="startMonth" th:value="${startMonth}" required>
+		</label>
+		<ol class="order-list">
+			<li th:each="i : ${#numbers.sequence(0, eligible.size() - 1)}">
+				<select name="order">
+					<option value="">—</option>
+					<option th:each="m : ${eligible}" th:value="${m.id}" th:text="${m.fullName}"
+							th:selected="${order.size() > i and order[i] == m.id}">Name</option>
+				</select>
+			</li>
+		</ol>
+		<p class="hint">Leave a place as "—" to leave it out.</p>
+		<div class="actions">
+			<button type="submit" class="button primary">Save the order</button>
+			<a class="button" th:href="@{/mgr}">Cancel</a>
+		</div>
+	</form>
+</main>
+</body>
+</html>

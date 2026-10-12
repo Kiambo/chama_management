@@ -11,6 +11,7 @@ import com.personal.chama.ledger.LedgerService;
 import com.personal.chama.loan.LoanEvent;
 import com.personal.chama.loan.LoanService;
 import com.personal.chama.member.MemberService;
+import com.personal.chama.mgr.MgrService;
 
 /** A member's shares and month-by-month history. The polished version comes in Phase 6. */
 @Controller
@@ -20,13 +21,15 @@ public class MemberLedgerController {
 	private final ContributionService contributionService;
 	private final LedgerService ledger;
 	private final LoanService loanService;
+	private final MgrService mgr;
 
 	public MemberLedgerController(MemberService memberService, ContributionService contributionService,
-			LedgerService ledger, LoanService loanService) {
+			LedgerService ledger, LoanService loanService, MgrService mgr) {
 		this.memberService = memberService;
 		this.contributionService = contributionService;
 		this.ledger = ledger;
 		this.loanService = loanService;
+		this.mgr = mgr;
 	}
 
 	@GetMapping("/members/{id}")
@@ -42,6 +45,11 @@ public class MemberLedgerController {
 				.map(v -> new LoanHistoryCard(v, loanService.timeline(v))).toList());
 		model.addAttribute("guaranteeing", loanService.guaranteedBy(id));
 		model.addAttribute("debts", loanService.debtsInvolving(id));
+		model.addAttribute("payouts", mgr.payoutsTo(id));
+		mgr.currentRound().ifPresent(round -> {
+			model.addAttribute("round", round);
+			round.slotOf(id).ifPresent(slot -> model.addAttribute("rotationSlot", slot));
+		});
 		return "members/show";
 	}
 

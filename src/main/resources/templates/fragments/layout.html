@@ -24,6 +24,8 @@
 			   th:attr="aria-current=${active == 'contributions'} ? 'page'">Contributions</a>
 			<a th:href="@{/loans}" th:classappend="${active == 'loans'} ? 'current'"
 			   th:attr="aria-current=${active == 'loans'} ? 'page'">Loans</a>
+			<a th:href="@{/mgr}" th:classappend="${active == 'mgr'} ? 'current'"
+			   th:attr="aria-current=${active == 'mgr'} ? 'page'">MGR</a>
 			<a th:href="@{/members}" th:classappend="${active == 'members'} ? 'current'"
 			   th:attr="aria-current=${active == 'members'} ? 'page'">Members</a>
 			<a th:href="@{/fund-earnings}" th:classappend="${active == 'pool'} ? 'current'"
@@ -63,7 +65,7 @@
 			<input type="date" name="decidedOn" th:value="${decision?.decidedOn} ?: ${#temporals.createToday()}">
 		</label>
 		<label>How the group agreed
-			<input type="text" name="howAgreed" maxlength="300" required th:value="${decision?.howAgreed}"
+			<input type="text" name="howAgreed" maxlength="300" th:value="${decision?.howAgreed}"
 				   placeholder="e.g. WhatsApp vote, 6 of 7 in favour">
 		</label>
 	</div>

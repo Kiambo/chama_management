@@ -68,6 +68,9 @@ public class LedgerEntry {
 	@Column(name = "debt_payment_id")
 	private Long debtPaymentId;
 
+	@Column(name = "mgr_payout_id")
+	private Long mgrPayoutId;
+
 	@Column(name = "period_month")
 	private YearMonth month;
 
@@ -138,6 +141,13 @@ public class LedgerEntry {
 		return entry;
 	}
 
+	public static LedgerEntry forMgrPayout(BigDecimal gross, Member recipient, YearMonth month, LocalDate date,
+			Long payoutId) {
+		LedgerEntry entry = new LedgerEntry(LedgerEntryType.MGR_PAYOUT, gross.negate(), recipient, month, date, null);
+		entry.mgrPayoutId = payoutId;
+		return entry;
+	}
+
 	public static LedgerEntry forDebtPayment(BigDecimal amount, Member guarantor, LocalDate date, Long loanId,
 			Long debtPaymentId, String note) {
 		LedgerEntry entry = forLoan(LedgerEntryType.GUARANTOR_DEBT_REPAID, amount, guarantor, date, loanId, null, note);
@@ -161,6 +171,7 @@ public class LedgerEntry {
 		reversal.repaymentId = repaymentId;
 		reversal.lateFeeId = lateFeeId;
 		reversal.debtPaymentId = debtPaymentId;
+		reversal.mgrPayoutId = mgrPayoutId;
 		reversal.reversesId = id;
 		return reversal;
 	}
@@ -203,6 +214,10 @@ public class LedgerEntry {
 
 	public Long getLateFeeId() {
 		return lateFeeId;
+	}
+
+	public Long getMgrPayoutId() {
+		return mgrPayoutId;
 	}
 
 	public Long getDebtPaymentId() {

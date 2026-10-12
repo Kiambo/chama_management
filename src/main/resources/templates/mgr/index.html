@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Merry-go-round')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('mgr')}"></header>
+<main class="page">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<span aria-current="page">Merry-go-round</span>
+	</nav>
+	<div class="title-row">
+		<div>
+			<p class="eyebrow">Merry-go-round</p>
+			<h1 th:text="${current != null} ? |Round ${current.round.number}| : 'Merry-go-round'">Round 5</h1>
+			<p class="muted" th:if="${current != null and current.forMonth(month).isPresent()}"
+			   th:text="|Month ${current.indexOf(current.forMonth(month).get())} of ${current.activeSlots().size()} · ${@fmt.month(month)}|">Month 2 of 7</p>
+		</div>
+		<div class="actions" sec:authorize="hasRole('RECORDER')">
+			<a class="button primary" th:if="${current == null or current.complete}" th:href="@{/mgr/rounds/new}"
+			   th:text="${current == null} ? 'Set up the rotation' : |Start Round ${current.round.number + 1}|">Set up</a>
+		</div>
+	</div>
+
+	<div th:replace="~{fragments/layout :: flash}"></div>
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<p th:if="${current == null}" class="muted">No rotation yet. Set up the current round: its number, the month it started and the order.</p>
+
+	<section class="card" th:each="r : ${rounds}">
+		<div class="card-head">
+			<h2 th:text="|Round ${r.round.number}|">Round 5</h2>
+			<span class="hint" th:text="${r.complete} ? |Finished · ${@fmt.month(r.round.startMonth)} to ${@fmt.month(r.lastMonth())}| : |From ${@fmt.month(r.round.startMonth)}|">From September 2026</span>
+		</div>
+		<div class="table-wrap">
+			<table>
+				<thead><tr><th>#</th><th>Member</th><th>Month</th><th class="num">Paid out</th><th>Status</th><th sec:authorize="hasRole('RECORDER')"></th></tr></thead>
+				<tbody>
+				<tr th:each="s : ${r.slots}" th:classappend="${s.status.name() == 'LOST_TURN'} ? 'inactive' : (${s.month == month} ? 'current-row')">
+					<td th:text="${s.slot.position}">1</td>
+					<td>
+						<a th:href="@{/members/{id}(id=${s.member.id})}" th:text="${s.member.fullName}">Name</a>
+						<div class="hint" th:if="${s.lostReason}" th:text="|Lost this round's turn: ${s.lostReason}|">lost</div>
+					</td>
+					<td th:text="${s.month != null} ? ${@fmt.month(s.month)} : '—'">October 2026</td>
+					<td class="num">
+						<span th:unless="${s.payouts.isEmpty()}" th:text="${@fmt.amount(s.net())}">9,000</span>
+						<div class="hint" th:each="p : ${s.payouts}"
+							 th:text="|${#temporals.format(p.paidDate, 'd MMM')}${p.historical ? ' · before the app' : ''}${p.nettedOwnMgr.signum() > 0 or p.savingsDeducted.signum() > 0 ? ' · gross ' + @fmt.amount(p.gross) : ''}|">10 Oct</div>
+					</td>
+					<td>
+						<span th:if="${s.status.name() == 'PAID'}" class="badge badge-green">Paid</span>
+						<span th:if="${s.status.name() == 'DUE'}" class="badge badge-amber" th:text="${s.month == month} ? 'Receiving this month' : 'Due'">Due</span>
+						<span th:if="${s.status.name() == 'UPCOMING'}" class="badge">Upcoming</span>
+						<span th:if="${s.status.name() == 'LOST_TURN'}" class="badge">Lost turn</span>
+					</td>
+					<td sec:authorize="hasRole('RECORDER')" class="row-actions">
+						<a th:if="${s.status.name() == 'DUE' and !s.month.isBefore(cutover)}" th:href="@{/mgr/slots/{id}/payout(id=${s.slot.id})}">Pay out</a>
+						<form th:if="${s.status.name() == 'DUE' and s.month.isBefore(cutover)}" class="inline-form"
+							  th:action="@{/mgr/slots/{id}/history(id=${s.slot.id})}" method="post">
+							<input type="number" name="amount" min="1" step="1" placeholder="Amount" required>
+							<input type="date" name="paidDate" required>
+							<button type="submit" class="link-button">Record earlier payout</button>
+						</form>
+						<th:block th:each="p : ${s.payouts}">
+							<form th:if="${p.id == latestPayoutId}" class="inline-form"
+								  th:action="@{/mgr/payouts/{id}/correct(id=${p.id})}" method="post">
+								<input type="text" name="reason" placeholder="Reason to correct" maxlength="500" required>
+								<button type="submit" class="link-button">Correct</button>
+							</form>
+						</th:block>
+						<a th:if="${s.status.name() == 'PAID' and !s.month.isBefore(cutover)}" th:href="@{/mgr/slots/{id}/payout(id=${s.slot.id})}">Top up</a>
+					</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<p class="hint" sec:authorize="hasRole('RECORDER')"
+		   th:if="${r.slots.?[!payouts.isEmpty()].isEmpty()}">
+			No payouts yet: <a th:href="@{/mgr/rounds/{id}/order(id=${r.round.id})}">change the order</a>.
+		</p>
+	</section>
+</main>
+</body>
+</html>

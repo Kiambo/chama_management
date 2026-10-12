@@ -12,12 +12,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.personal.chama.common.Money;
 import com.personal.chama.config.ChamaProperties;
+import com.personal.chama.decision.DecisionInput;
 import com.personal.chama.ledger.LedgerEntry;
 import com.personal.chama.ledger.LedgerEntryRepository;
 import com.personal.chama.ledger.LedgerEntryType;
@@ -39,10 +41,13 @@ public class ContributionService {
 	private final AuditorAware<String> auditor;
 	private final Clock clock;
 	private final YearMonth cutover;
+	/** Looked up when needed: the merry-go-round's rule itself uses this service. */
+	private final ObjectProvider<OptOutPolicy> optOutPolicies;
 
 	public ContributionService(ContributionRepository contributions, ContributionOptOutRepository optOuts,
 			MemberRepository members, LedgerService ledger, LedgerEntryRepository ledgerEntries,
-			ContributionRules rules, AuditorAware<String> auditor, Clock clock, ChamaProperties properties) {
+			ContributionRules rules, AuditorAware<String> auditor, Clock clock, ChamaProperties properties,
+			ObjectProvider<OptOutPolicy> optOutPolicies) {
 		this.contributions = contributions;
 		this.optOuts = optOuts;
 		this.members = members;
@@ -52,6 +57,7 @@ public class ContributionService {
 		this.auditor = auditor;
 		this.clock = clock;
 		this.cutover = properties.cutoverMonth();
+		this.optOutPolicies = optOutPolicies;
 	}
 
 	public YearMonth currentMonth() {
@@ -161,7 +167,22 @@ public class ContributionService {
 
 	@Transactional
 	public void setOptOut(Long memberId, YearMonth month, boolean savings, boolean mgr, String note) {
+		setOptOut(memberId, month, savings, mgr, note, null);
+	}
+
+	/**
+	 * Saves a member's opt-out for a month. Other rules (e.g. the merry-go-round's "not
+	 * after receiving") can refuse it unless a group decision is given.
+	 */
+	@Transactional
+	public void setOptOut(Long memberId, YearMonth month, boolean savings, boolean mgr, String note,
+			DecisionInput decision) {
 		Member member = members.findByIdForUpdate(memberId).orElseThrow(() -> new MemberNotFoundException(memberId));
+		boolean wasOptedOutOfMgr = optOuts.findByMemberIdAndMonth(memberId, month).map(ContributionOptOut::isOptOutMgr)
+				.orElse(false);
+		if (mgr && !wasOptedOutOfMgr) {
+			optOutPolicies.orderedStream().forEach(policy -> policy.checkMgrOptOut(member, month, decision));
+		}
 		Portions paid = ContributionRules.paidBy(contributions.findByMemberIdAndMonthAndVoidedAtIsNull(memberId, month));
 		if (savings && paid.mmf().signum() > 0) {
 			throw new ContributionException("Savings were already paid for this month. Correct that payment first.");
@@ -173,6 +194,34 @@ public class ContributionService {
 				.orElseGet(() -> new ContributionOptOut(member, month));
 		optOut.set(savings, mgr, blankToNull(note));
 		optOuts.save(optOut);
+	}
+
+	/**
+	 * Records exact savings and MGR amounts for a member's month, e.g. netted from or
+	 * deducted at their MGR payout. Never more than is owed.
+	 */
+	@Transactional
+	public Contribution recordPortions(Long memberId, YearMonth month, Portions portions, LocalDate date, String method,
+			String note) {
+		Member member = members.findByIdForUpdate(memberId).orElseThrow(() -> new MemberNotFoundException(memberId));
+		MemberMonth current = build(member, month, optOuts.findByMemberIdAndMonth(memberId, month).orElse(null),
+				contributions.findByMemberIdAndMonthAndVoidedAtIsNull(memberId, month));
+		Portions owed = current.owed();
+		if (portions.mmf().compareTo(owed.mmf()) > 0 || portions.mgr().compareTo(owed.mgr()) > 0
+				|| portions.total().signum() <= 0) {
+			throw new ContributionException("That is more than is owed for this month.");
+		}
+		Contribution contribution = contributions.save(new Contribution(member, month, portions, date, method, null,
+				true, note));
+		if (portions.mmf().signum() > 0) {
+			ledger.post(LedgerEntry.forContribution(LedgerEntryType.CONTRIBUTION_MMF, portions.mmf(), member, month,
+					date, contribution.getId()));
+		}
+		if (portions.mgr().signum() > 0) {
+			ledger.post(LedgerEntry.forContribution(LedgerEntryType.CONTRIBUTION_MGR, portions.mgr(), member, month,
+					date, contribution.getId()));
+		}
+		return contribution;
 	}
 
 	public Contribution get(Long id) {

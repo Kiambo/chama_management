@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('MGR payout')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('mgr')}"></header>
+<main class="page narrow" th:with="s=${p.slot}">
+	<nav class="crumbs" aria-label="You are here">
+		<a th:href="@{/}">Dashboard</a>
+		<a th:href="@{/mgr}">Merry-go-round</a>
+		<span aria-current="page" th:text="|${@fmt.month(s.month)} payout|">Payout</span>
+	</nav>
+	<p class="eyebrow" th:text="${p.topUp} ? 'Top-up payout' : |Round ${s.slot.round.number} payout|">Payout</p>
+	<h1 th:text="|${s.member.fullName}, ${@fmt.month(s.month)}|">Name, October 2026</h1>
+	<p class="muted" th:if="${p.topUp}">MGR money for this month that came in after the payout. It goes to the same recipient.</p>
+
+	<div th:replace="~{fragments/layout :: error}"></div>
+
+	<section class="card" th:unless="${p.topUp}">
+		<h2>Paid in for this month</h2>
+		<div class="table-wrap">
+			<table>
+				<tbody>
+				<tr th:each="r : ${p.rows}" th:if="${r.due.mgr().signum() > 0}">
+					<td th:text="${r.member.fullName}">Name</td>
+					<td class="num" th:text="|${@fmt.amount(r.paid.mgr())} of ${@fmt.amount(r.due.mgr())}|">1,500 of 1,500</td>
+					<td>
+						<span th:if="${r.member.id == s.member.id and r.owed().mgr().signum() > 0}" class="badge">Netted from payout</span>
+						<span th:if="${r.member.id != s.member.id and r.owed().mgr().signum() > 0}" class="badge badge-red">Not paid</span>
+						<span th:if="${r.owed().mgr().signum() == 0}" class="badge badge-green">Paid</span>
+					</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<div class="card">
+		<table>
+			<tbody>
+			<tr><td>Month's MGR pool (gross)</td><td class="num"><strong th:text="${@fmt.kes(p.gross)}">KES 9,000</strong></td></tr>
+			<tr th:if="${p.ownMgrOwed.signum() > 0}"><td>− Their own MGR part, netted</td><td class="num" th:text="${@fmt.amount(p.ownMgrOwed)}">1,500</td></tr>
+			<tr th:if="${p.ownSavingsOwed.signum() > 0}"><td>− Their unpaid savings, if deducted</td><td class="num" th:text="${@fmt.amount(p.ownSavingsOwed)}">2,000</td></tr>
+			<tr th:if="${p.ownSavingsOwed.signum() > 0}"><td><strong>To send (deducting savings)</strong></td><td class="num"><strong th:text="${@fmt.kes(p.netIfDeducting())}">KES 5,500</strong></td></tr>
+			<tr th:if="${p.ownSavingsOwed.signum() > 0}"><td>To send (not deducting)</td><td class="num" th:text="${@fmt.kes(p.netWithoutDeducting())}">KES 7,500</td></tr>
+			<tr th:if="${p.ownSavingsOwed.signum() == 0}"><td><strong>To send</strong></td><td class="num"><strong th:text="${@fmt.kes(p.netWithoutDeducting())}">KES 9,000</strong></td></tr>
+			</tbody>
+		</table>
+		<p class="hint" th:if="${p.ownMgrOwed.signum() > 0 or p.ownSavingsOwed.signum() > 0}">What's netted or deducted is recorded as their contribution for the month.</p>
+	</div>
+
+	<form th:action="@{/mgr/slots/{id}/payout(id=${s.slot.id})}" method="post" enctype="multipart/form-data" class="stack">
+		<label class="check" th:if="${p.ownSavingsOwed.signum() > 0}">
+			<input type="checkbox" name="deductSavings" value="true" checked>
+			Deduct their unpaid savings (<span th:text="${@fmt.amount(p.ownSavingsOwed)}">2,000</span>) from the payout
+		</label>
+		<div class="grid-2">
+			<label>Date paid
+				<input type="date" name="paidDate" th:value="${today}" required>
+			</label>
+			<label>Sent by
+				<div th:replace="~{fragments/layout :: methodPicker(${method}, ${methods})}"></div>
+			</label>
+		</div>
+		<label>Reference
+			<input type="text" name="reference" maxlength="100">
+		</label>
+
+		<th:block th:if="${!p.topUp and !p.unpaid.isEmpty()}">
+			<div class="alert alert-amber">
+				Not everyone has paid their MGR part, so the payout waits (the 10th is the latest it should happen).
+				To pay out now anyway, record the group's decision below.
+			</div>
+			<fieldset th:replace="~{fragments/layout :: decisionFields}"></fieldset>
+		</th:block>
+
+		<div class="actions">
+			<button type="submit" class="button primary">Confirm payout</button>
+			<a class="button" th:href="@{/mgr}">Cancel</a>
+		</div>
+	</form>
+</main>
+</body>
+</html>

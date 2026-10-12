@@ -15,7 +15,7 @@
 
 	<div th:replace="~{fragments/layout :: error}"></div>
 
-	<form th:action="@{/contributions/opt-out}" method="post" class="stack">
+	<form th:action="@{/contributions/opt-out}" method="post" enctype="multipart/form-data" class="stack">
 		<input type="hidden" name="memberId" th:value="${row.member.id}">
 		<input type="hidden" name="month" th:value="${row.month}">
 
@@ -27,11 +27,17 @@
 			<input type="checkbox" name="mgr" value="true" th:checked="${row.optedOutMgr()}">
 			Opt out of the merry-go-round this month
 		</label>
-		<p class="hint">Opting out of the MGR in any month loses this member's turn for the round. That rule is enforced once the rotation is added (Phase 5).</p>
+		<p class="hint">Opting out of the MGR in any month loses this member's turn for the rest of the round; everyone after them moves up a month.</p>
 
 		<label>Note
 			<input type="text" name="note" maxlength="500" th:value="${row.optOut != null} ? ${row.optOut.note}">
 		</label>
+
+		<details class="exception" th:open="${error != null and #strings.contains(error, 'group decides')}">
+			<summary>Already received this round? Record the group's decision</summary>
+			<p class="hint">Once a member has received their payout, they can't opt out of the MGR for the rest of the round unless the group decides.</p>
+			<fieldset th:replace="~{fragments/layout :: decisionFields}"></fieldset>
+		</details>
 
 		<div class="actions">
 			<button type="submit" class="button primary">Save</button>

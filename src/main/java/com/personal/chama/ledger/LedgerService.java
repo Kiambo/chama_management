@@ -99,7 +99,13 @@ public class LedgerService {
 		return mmfBalance().add(principalOutstanding());
 	}
 
+	/** MGR parts paid in for the month. */
 	public BigDecimal mgrCollectedFor(YearMonth month) {
+		return Money.orZero(entries.sumByTypesForMonth(List.of(LedgerEntryType.CONTRIBUTION_MGR), month));
+	}
+
+	/** MGR money for the month not yet paid out. Zero once the month's payout is made. */
+	public BigDecimal mgrBalanceFor(YearMonth month) {
 		return Money.orZero(entries.sumByTypesForMonth(LedgerEntryType.mgrPoolTypes(), month));
 	}
 

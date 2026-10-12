@@ -18,6 +18,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.personal.chama.common.Money;
 import com.personal.chama.config.ChamaProperties;
+import com.personal.chama.decision.DecisionException;
+import com.personal.chama.decision.DecisionInput;
 import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberService;
 
@@ -93,12 +95,14 @@ public class ContributionController {
 	@PostMapping("/opt-out")
 	public String optOut(@RequestParam Long memberId, @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month,
 			@RequestParam(defaultValue = "false") boolean savings, @RequestParam(defaultValue = "false") boolean mgr,
-			@RequestParam(required = false) String note, Model model, RedirectAttributes redirect) {
+			@RequestParam(required = false) String note, @ModelAttribute("decision") DecisionInput decision, Model model,
+			RedirectAttributes redirect) {
 		try {
-			contributionService.setOptOut(memberId, month, savings, mgr, note);
+			boolean exception = decision != null && decision.getHowAgreed() != null && !decision.getHowAgreed().isBlank();
+			contributionService.setOptOut(memberId, month, savings, mgr, note, exception ? decision : null);
 			redirect.addFlashAttribute("message", "Opt-out saved.");
 			return "redirect:/contributions?month=" + month;
-		} catch (ContributionException e) {
+		} catch (ContributionException | DecisionException e) {
 			model.addAttribute("row", contributionService.memberMonth(memberId, month));
 			model.addAttribute("error", e.getMessage());
 			return "contributions/opt-out";

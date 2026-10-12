@@ -18,6 +18,10 @@
 					Member since <span th:text="${#temporals.format(member.joinDate, 'MMMM yyyy')}">March 2025</span>
 					<span th:if="${member.mgrStartDate != null}" th:text="| · in the MGR from ${#temporals.format(member.mgrStartDate, 'MMMM yyyy')}|"></span>
 					<span th:if="${member.mgrStartDate == null}"> · not in the MGR yet</span>
+					<span th:if="${rotationSlot != null and rotationSlot.month != null}"
+						  th:text="| · Rotation position ${round.indexOf(rotationSlot)} of ${round.activeSlots().size()} (${@fmt.month(rotationSlot.month)})|"></span>
+					<span th:if="${rotationSlot != null and rotationSlot.month == null}"
+						  th:text="| · lost this round's turn (${rotationSlot.lostReason})|"></span>
 				</p>
 			</div>
 		</div>
@@ -43,7 +47,9 @@
 		</div>
 		<div class="card">
 			<p class="stat-label">MGR payouts received</p>
-			<span class="pill">Coming in Phase 5</span>
+			<p class="stat-value" th:text="${payouts.size()}">2</p>
+			<p class="stat-sub" th:unless="${payouts.isEmpty()}"
+			   th:text="|Last in ${@fmt.month(payouts[payouts.size() - 1].month)}, ${@fmt.kes(payouts[payouts.size() - 1].gross)}|">Last in April 2026</p>
 		</div>
 	</div>
 
