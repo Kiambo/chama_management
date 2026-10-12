@@ -5,9 +5,11 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -35,6 +37,8 @@ import com.personal.chama.ledger.LedgerEntryRepository;
 import com.personal.chama.ledger.LedgerService;
 import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberRepository;
+import com.personal.chama.reference.PaymentReference;
+import com.personal.chama.reference.ReferenceService;
 
 /**
  * The merry-go-round (brief 4.3, decisions M1-M6 and the Phase 5 plan). Who receives
@@ -57,11 +61,12 @@ public class MgrService implements OptOutPolicy {
 	private final AuditorAware<String> auditor;
 	private final Clock clock;
 	private final YearMonth cutover;
+	private final ReferenceService references;
 
 	public MgrService(MgrRoundRepository rounds, MgrSlotRepository slots, MgrPayoutRepository payouts,
 			MemberRepository members, ContributionOptOutRepository optOuts, ContributionService contributions,
 			LedgerService ledger, LedgerEntryRepository ledgerEntries, DecisionService decisions,
-			AuditorAware<String> auditor, Clock clock, ChamaProperties properties) {
+			AuditorAware<String> auditor, Clock clock, ChamaProperties properties, ReferenceService references) {
 		this.rounds = rounds;
 		this.slots = slots;
 		this.payouts = payouts;
@@ -74,6 +79,7 @@ public class MgrService implements OptOutPolicy {
 		this.auditor = auditor;
 		this.clock = clock;
 		this.cutover = properties.cutoverMonth();
+		this.references = references;
 	}
 
 	public YearMonth currentMonth() {
@@ -263,6 +269,7 @@ public class MgrService implements OptOutPolicy {
 		if (preview.gross().signum() <= 0) {
 			throw new MgrException("There is no MGR money to pay out for " + month + ".");
 		}
+		references.checkAvailable(reference, MgrException::new);
 		Long decisionId = null;
 		if (!preview.topUp() && !preview.unpaid().isEmpty()) {
 			if (override == null || override.getHowAgreed() == null || override.getHowAgreed().isBlank()) {
@@ -286,6 +293,10 @@ public class MgrService implements OptOutPolicy {
 		MgrPayout payout = payouts.save(new MgrPayout(entity, slot.member(), month, gross, netted, deducted, paidDate,
 				method.strip(), reference == null || reference.isBlank() ? null : reference.strip(), false,
 				contributionId, decisionId));
+		references.claim(reference, PaymentReference.Kind.MGR_PAYOUT, payout.getId(),
+				"MGR payout to " + slot.member().getFullName() + " for "
+						+ month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)),
+				MgrException::new);
 		ledger.post(LedgerEntry.forMgrPayout(gross, slot.member(), month, paidDate, payout.getId()));
 		return payout;
 	}
@@ -326,6 +337,7 @@ public class MgrService implements OptOutPolicy {
 			contributions.voidContribution(payout.getContributionId(), reason);
 		}
 		payout.voidWith(reason, auditor.getCurrentAuditor().orElse("system"), Instant.now(clock));
+		references.release(PaymentReference.Kind.MGR_PAYOUT, payoutId);
 	}
 
 	public List<MgrPayout> payoutsTo(Long memberId) {

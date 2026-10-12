@@ -34,6 +34,7 @@ the repo.
 | C8 | A payment can't be more than is still owed for that month; each month is recorded separately. A month can be paid in several payments. |
 | C9 | The statement file (PDF, PNG or JPEG, up to 5 MB) can be attached to fund earnings as evidence. The amount is still typed in. |
 | C10 | Opening balances are entered as each member's shares plus the statement balance; the group money is worked out as statement + loans out - shares. They are corrected together (all reversed, then re-entered). |
+| C11 | A **payment reference** (M-Pesa code, PayPal ID, bank reference) can be used only once, across every kind of payment: contributions, loan disbursements and repayments, repayments to guarantors and MGR payouts. Compared without case or spaces. A corrected (reversed) payment releases its reference so the right payment can reuse it. Blank references aren't checked. |
 
 ## MMF pool and loan caps
 

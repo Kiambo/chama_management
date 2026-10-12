@@ -75,7 +75,12 @@
 					<p class="eyebrow" th:text="${r.status.name() == 'PAID'} ? 'Received this month' : 'Receiving this month'">Receiving this month</p>
 					<a class="rotation-name" th:href="@{/members/{id}(id=${r.member.id})}" th:text="${r.member.fullName}">Name</a>
 				</div>
-				<span class="rotation-amount" th:text="${@fmt.kes(d.rotation.amount)}">KES 9,000</span>
+				<div class="rotation-end">
+					<span class="rotation-amount" th:text="${@fmt.kes(d.rotation.amount)}">KES 9,000</span>
+					<span class="badge" th:classappend="'badge-' + ${d.rotation.payoutTone()}" th:text="${d.rotation.payoutStatus}">Pending</span>
+					<a sec:authorize="hasRole('RECORDER')" th:if="${d.rotation.payoutStatus != 'Paid'}" class="button primary"
+					   th:href="@{/mgr/slots/{id}/payout(id=${r.slot.id})}">Pay out</a>
+				</div>
 			</div>
 			<p th:if="${d.rotation.receiving == null}" class="muted">Nobody receives this month.</p>
 			<div class="rotation-next" th:if="${d.rotation.next != null}" th:with="n=${d.rotation.next}">

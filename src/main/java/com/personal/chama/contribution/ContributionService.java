@@ -5,9 +5,11 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -20,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.personal.chama.common.Money;
 import com.personal.chama.config.ChamaProperties;
 import com.personal.chama.decision.DecisionInput;
+import com.personal.chama.reference.PaymentReference;
+import com.personal.chama.reference.ReferenceService;
 import com.personal.chama.ledger.LedgerEntry;
 import com.personal.chama.ledger.LedgerEntryRepository;
 import com.personal.chama.ledger.LedgerEntryType;
@@ -32,6 +36,9 @@ import com.personal.chama.member.MemberRepository;
 @Transactional(readOnly = true)
 public class ContributionService {
 
+	private static final DateTimeFormatter MONTH =
+			DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+
 	private final ContributionRepository contributions;
 	private final ContributionOptOutRepository optOuts;
 	private final MemberRepository members;
@@ -43,11 +50,12 @@ public class ContributionService {
 	private final YearMonth cutover;
 	/** Looked up when needed: the merry-go-round's rule itself uses this service. */
 	private final ObjectProvider<OptOutPolicy> optOutPolicies;
+	private final ReferenceService references;
 
 	public ContributionService(ContributionRepository contributions, ContributionOptOutRepository optOuts,
 			MemberRepository members, LedgerService ledger, LedgerEntryRepository ledgerEntries,
 			ContributionRules rules, AuditorAware<String> auditor, Clock clock, ChamaProperties properties,
-			ObjectProvider<OptOutPolicy> optOutPolicies) {
+			ObjectProvider<OptOutPolicy> optOutPolicies, ReferenceService references) {
 		this.contributions = contributions;
 		this.optOuts = optOuts;
 		this.members = members;
@@ -58,6 +66,7 @@ public class ContributionService {
 		this.clock = clock;
 		this.cutover = properties.cutoverMonth();
 		this.optOutPolicies = optOutPolicies;
+		this.references = references;
 	}
 
 	public YearMonth currentMonth() {
@@ -137,10 +146,13 @@ public class ContributionService {
 		MemberMonth current = build(member, month, optOuts.findByMemberIdAndMonth(member.getId(), month).orElse(null),
 				contributions.findByMemberIdAndMonthAndVoidedAtIsNull(member.getId(), month));
 		Portions split = rules.split(form.getAmount(), current.due(), current.paid());
+		references.checkAvailable(form.getReference(), ContributionException::new);
 
 		Contribution contribution = contributions.save(new Contribution(member, month, split, form.getPaidDate(),
 				form.getMethod().strip(), blankToNull(form.getReference()), form.isAgreedBackpay(),
 				blankToNull(form.getNote())));
+		references.claim(form.getReference(), PaymentReference.Kind.CONTRIBUTION, contribution.getId(),
+				"Contribution from " + member.getFullName() + " for " + MONTH.format(month), ContributionException::new);
 		if (split.mmf().signum() > 0) {
 			ledger.post(LedgerEntry.forContribution(LedgerEntryType.CONTRIBUTION_MMF, split.mmf(), member, month,
 					form.getPaidDate(), contribution.getId()));
@@ -158,6 +170,7 @@ public class ContributionService {
 		Contribution contribution = contributions.findById(contributionId)
 				.orElseThrow(() -> new ContributionException("No such contribution."));
 		contribution.voidWith(reason, auditor.getCurrentAuditor().orElse("system"), Instant.now(clock));
+		references.release(PaymentReference.Kind.CONTRIBUTION, contributionId);
 		for (LedgerEntry entry : ledgerEntries.findByContributionIdAndReversesIdIsNull(contributionId)) {
 			if (!ledger.isReversed(entry.getId())) {
 				ledger.reverse(entry.getId(), reason);

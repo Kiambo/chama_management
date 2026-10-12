@@ -19,6 +19,8 @@ import com.personal.chama.ledger.LedgerEntry;
 import com.personal.chama.ledger.LedgerEntryRepository;
 import com.personal.chama.ledger.LedgerEntryType;
 import com.personal.chama.ledger.LedgerService;
+import com.personal.chama.reference.PaymentReference;
+import com.personal.chama.reference.ReferenceService;
 
 /**
  * Changes to a loan that need a group decision (G1): waiving a late fee, extending,
@@ -43,12 +45,14 @@ public class LoanDecisionService {
 	private final LedgerEntryRepository ledgerEntries;
 	private final AuditorAware<String> auditor;
 	private final Clock clock;
+	private final ReferenceService references;
 
 	public LoanDecisionService(LoanRepository loans, LateFeeRepository fees, ScheduleChangeRepository changes,
 			InstallmentRepository installments, GuarantorDebtRepository debts,
 			GuarantorDebtPaymentRepository debtPayments, LoanHistory history, LoanService loanService,
 			LatePaymentService latePayments, DecisionService decisions, LoanCalculator calculator,
-			LedgerService ledger, LedgerEntryRepository ledgerEntries, AuditorAware<String> auditor, Clock clock) {
+			LedgerService ledger, LedgerEntryRepository ledgerEntries, AuditorAware<String> auditor, Clock clock,
+			ReferenceService references) {
 		this.loans = loans;
 		this.fees = fees;
 		this.changes = changes;
@@ -64,6 +68,7 @@ public class LoanDecisionService {
 		this.ledgerEntries = ledgerEntries;
 		this.auditor = auditor;
 		this.clock = clock;
+		this.references = references;
 	}
 
 	// ---------------------------------------------------------------- fee waiver (R8)
@@ -283,8 +288,12 @@ public class LoanDecisionService {
 		if (method == null || method.isBlank()) {
 			throw new LoanException("Enter how it was paid.");
 		}
+		references.checkAvailable(reference, LoanException::new);
 		GuarantorDebtPayment payment = debtPayments.save(new GuarantorDebtPayment(debtId, Money.orZero(amount), paidDate,
 				method.strip(), reference == null || reference.isBlank() ? null : reference.strip()));
+		references.claim(reference, PaymentReference.Kind.GUARANTOR_REPAYMENT, payment.getId(),
+				"Repayment from " + debt.getLoan().getBorrower().getFullName() + " to " + debt.getGuarantor().getFullName(),
+				LoanException::new);
 		ledger.post(LedgerEntry.forDebtPayment(Money.orZero(amount), debt.getGuarantor(), paidDate,
 				debt.getLoan().getId(), payment.getId(), "From " + debt.getLoan().getBorrower().getFullName()));
 	}
@@ -302,6 +311,7 @@ public class LoanDecisionService {
 			}
 		}
 		payment.voidWith(reason, auditor.getCurrentAuditor().orElse("system"), Instant.now(clock));
+		references.release(PaymentReference.Kind.GUARANTOR_REPAYMENT, paymentId);
 	}
 
 	private Loan openLoan(Long id) {

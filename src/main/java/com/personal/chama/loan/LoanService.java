@@ -28,6 +28,8 @@ import com.personal.chama.ledger.LedgerService;
 import com.personal.chama.member.Member;
 import com.personal.chama.member.MemberNotFoundException;
 import com.personal.chama.member.MemberRepository;
+import com.personal.chama.reference.PaymentReference;
+import com.personal.chama.reference.ReferenceService;
 
 /** Borrowing limits, guarantor checks, disbursement and repayments (brief 4.4). */
 @Service
@@ -51,13 +53,14 @@ public class LoanService {
 	private final GuarantorDebtRepository debts;
 	private final GuarantorDebtPaymentRepository debtPayments;
 	private final GroupDecisionRepository decisions;
+	private final ReferenceService references;
 
 	public LoanService(LoanRepository loans, GuaranteeRepository guarantees, InstallmentRepository installments,
 			RepaymentRepository repayments, LoanSignatureRepository signatures, MemberRepository members,
 			LedgerService ledger, LedgerEntryRepository ledgerEntries, ContributionService contributions,
 			LoanCalculator calculator, AuditorAware<String> auditor, Clock clock, LoanHistory history,
 			LatePaymentService latePayments, GuarantorDebtRepository debts, GuarantorDebtPaymentRepository debtPayments,
-			GroupDecisionRepository decisions) {
+			GroupDecisionRepository decisions, ReferenceService references) {
 		this.loans = loans;
 		this.guarantees = guarantees;
 		this.installments = installments;
@@ -75,6 +78,7 @@ public class LoanService {
 		this.debts = debts;
 		this.debtPayments = debtPayments;
 		this.decisions = decisions;
+		this.references = references;
 	}
 
 	public LocalDate today() {
@@ -193,6 +197,7 @@ public class LoanService {
 			}
 		}
 
+		references.checkAvailable(form.getReference(), LoanException::new);
 		Terms terms = terms(amount, form.getTenure(), form.getDisbursedDate(), form.getSchedule());
 		if (terms.installments().stream().anyMatch(i -> i.amount().signum() <= 0)) {
 			throw new LoanException("That amount is too small to split into " + terms.installments().size() + " installments.");
@@ -203,6 +208,8 @@ public class LoanService {
 		terms.installments().forEach(loan::addInstallment);
 		chosen.forEach(loan::addGuarantor);
 		loan = loans.save(loan);
+		references.claim(form.getReference(), PaymentReference.Kind.LOAN_DISBURSEMENT, loan.getId(),
+				"Loan to " + borrower.getFullName(), LoanException::new);
 
 		ledger.post(LedgerEntry.forLoan(LedgerEntryType.LOAN_DISBURSED, amount.negate(), borrower,
 				form.getDisbursedDate(), loan.getId(), null, "Loan to " + borrower.getFullName()));
@@ -266,6 +273,7 @@ public class LoanService {
 			}
 		}
 		loan.cancel(reason);
+		references.release(PaymentReference.Kind.LOAN_DISBURSEMENT, loanId);
 	}
 
 	// ---------------------------------------------------------------- repayments
@@ -292,12 +300,15 @@ public class LoanService {
 		if (method == null || method.isBlank()) {
 			throw new LoanException("Enter how it was paid.");
 		}
+		references.checkAvailable(reference, LoanException::new);
 		// Replay up to the payment date: a fee charged after that date isn't paid by it.
 		RepaymentSchedule.Allocation allocation = history.scheduleAsOf(loan, paidDate)
 				.apply(Money.orZero(amount), paidDate);
 
 		Repayment repayment = repayments.save(new Repayment(loan, Money.orZero(amount), paidDate, method.strip(),
 				blankToNull(reference)));
+		references.claim(reference, PaymentReference.Kind.LOAN_REPAYMENT, repayment.getId(),
+				"Loan repayment from " + loan.getBorrower().getFullName(), LoanException::new);
 		postAllocation(loan, allocation, paidDate, repayment.getId());
 		afterPayment(loan);
 		return repayment;
@@ -357,6 +368,7 @@ public class LoanService {
 			}
 		}
 		repayment.voidWith(reason, auditor.getCurrentAuditor().orElse("system"), Instant.now(clock));
+		references.release(PaymentReference.Kind.LOAN_REPAYMENT, repaymentId);
 		if (repayment.isRecovery()) {
 			loan.clearPoolLoss();
 		}

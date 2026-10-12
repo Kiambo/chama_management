@@ -73,7 +73,7 @@ class ContributionIntegrationTest {
 		form.setAmount(Money.of(amount));
 		form.setPaidDate(PAID_ON_TIME);
 		form.setMethod("M-Pesa");
-		form.setReference("QWE123");
+		form.setReference("QWE" + UUID.randomUUID().toString().substring(0, 8));
 		return form;
 	}
 

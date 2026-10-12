@@ -2,6 +2,8 @@ package com.personal.chama.web;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -30,15 +32,18 @@ public class DashboardService {
 	private final LoanService loans;
 	private final MgrService mgr;
 	private final ChamaProperties properties;
+	private final Clock clock;
 
 	public DashboardService(ContributionService contributions, LedgerService ledger,
-			OpeningBalanceService openingBalances, LoanService loans, MgrService mgr, ChamaProperties properties) {
+			OpeningBalanceService openingBalances, LoanService loans, MgrService mgr, ChamaProperties properties,
+			Clock clock) {
 		this.contributions = contributions;
 		this.ledger = ledger;
 		this.openingBalances = openingBalances;
 		this.loans = loans;
 		this.mgr = mgr;
 		this.properties = properties;
+		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
@@ -72,12 +77,34 @@ public class DashboardService {
 			MgrService.SlotView next = round.nextAfter(month).orElse(null);
 			BigDecimal amount = now != null && !now.payouts().isEmpty() ? now.gross() : pool;
 			return new Rotation(round.round().getNumber(), now == null ? 0 : round.indexOf(now),
-					round.activeSlots().size(), now, next, amount);
+					round.activeSlots().size(), now, next, amount, payoutStatus(now, month));
 		}).orElse(null);
 	}
 
+	private String payoutStatus(MgrService.SlotView slot, YearMonth month) {
+		return slot == null ? null
+				: payoutStatus(slot.status(), month, LocalDate.now(clock), properties.contribution().dueDay());
+	}
+
+	/** Paid; Pending up to the due day (the 10th, the latest a payout should happen); Late after it (M1). */
+	static String payoutStatus(MgrService.SlotStatus status, YearMonth month, LocalDate today, int dueDay) {
+		if (status == MgrService.SlotStatus.PAID) {
+			return "Paid";
+		}
+		LocalDate latest = month.atDay(Math.min(dueDay, month.lengthOfMonth()));
+		return today.isAfter(latest) ? "Late" : "Pending";
+	}
+
 	public record Rotation(int round, int position, int length, MgrService.SlotView receiving,
-			MgrService.SlotView next, BigDecimal amount) {
+			MgrService.SlotView next, BigDecimal amount, String payoutStatus) {
+
+		public String payoutTone() {
+			return switch (payoutStatus == null ? "" : payoutStatus) {
+				case "Paid" -> "green";
+				case "Late" -> "red";
+				default -> "amber";
+			};
+		}
 	}
 
 	/** "One payment due Fri 16 Oct", "2 payments overdue", "All on track" - the most urgent first. */
